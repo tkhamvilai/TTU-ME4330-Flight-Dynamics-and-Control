@@ -3,41 +3,70 @@ AircraftParameters
 AircraftInitialization
 
 %% Simulation Setup
-Tf = 100; % sec
+Tf = 200; % sec
 dt = 0.01;
 tspan = 0:dt:Tf;
 itr = 1;
 
 state = zeros(12,length(tspan));
 state_dot = zeros(12,length(tspan));
+surfaces = zeros(6,length(tspan));
 controls = zeros(6,length(tspan));
+wind_terms = zeros(3,length(tspan));
 
 for t = tspan
  %% Atmospheric Model
     height = -pos(3);
     [Temp,a,Press,rho,nu,mu] = atmosisa(height); % temperature, speed of sound, pressure, density, kinematic viscosity, dynamic viscosity
  
- %% Wind Frame
+ %% Feedback States
+    x = pos(1);
+    y = pos(2);
+    z = pos(3);
     u = vel(1) - wind_vel(1); 
     v = vel(2) - wind_vel(2); 
     w = vel(3) - wind_vel(3);
+    phi = clip(att(1),-pi,pi); % roll
+    theta = clip(att(2),-pi/2,pi/2); % pitch
+    psi = clip(att(3),-pi,pi); % yaw
+    p = rate(1);
+    q = rate(2);
+    r = rate(3);
+
+ %% Wind Frame
     V = sqrt(u^2 + v^2 + w^2); % free-stream velocity
     alpha = atan2(w,u); % angle of attack
     beta = asin(v/V); % side-slip angle
     Mach = V/a; % mach number
     Q = 1/2*rho*V^2; % dynamic pressure
 
+ %% Controls
+    % free-fall
+    ua = 0;
+    ue = 0;
+    ur = 0;
+
+    % Climb
+    % ue = deg2rad(2.5);
+    
+    % Pitch SAS
+    % ue = -q;
+
+    % Pitch CAS
+    ue = (deg2rad(15)-theta)-q;
+
+ %% Actuator Dynamics
+    da_dot = (ua - da)/0.1;
+    de_dot = (-ue - de)/0.1; % negative gain in tf, take care off +de to -M
+    dr_dot = (ur - dr)/0.1;
+
  %% Engine Model
-    n = 1485; % rpm (full at 2300)
+    n = 2500; % rpm
     Pz = 20; % mainfold pressure ["Hg] 35mps
     P = 0.7355*(-326.5+(0.00412*(Pz+7.4)*(n+2010)+(408-0.0965*n)*(1-rho/1.225))); % engine power
     dpt = 0.08696+191.18*(P*2/rho/V^3);
 
  %% Aerodynamics Model
-    p = rate(1);
-    q = rate(2);
-    r = rate(3);
-
     CL = CL_0 + CL_alpha*alpha + CL_alpha_dot*alpha_dot + CL_q*q*c/2/V + CL_Mach*Mach + CL_de*de;
     CL = CL/sqrt(abs(1-Mach^2));
     CD_i = CL^2/pi/e/AR; % induce drag coefficient
@@ -65,11 +94,7 @@ for t = tspan
     Forces = [X;Y;Z];
     Moments = [L;M;N];
 
- %% Rigid-Body Dynamics   
-    phi = clip(att(1),-pi,pi); % roll
-    theta = clip(att(1),-pi/2,pi/2); % pitch
-    psi = clip(att(3),-pi,pi); % yaw
-    
+ %% Rigid-Body Dynamics       
     C_b2i = [cos(theta)*cos(psi) sin(phi)*sin(theta)*cos(psi)-cos(phi)*sin(psi) cos(phi)*sin(theta)*cos(psi)+sin(phi)*sin(psi);
              cos(theta)*sin(psi) sin(phi)*sin(theta)*sin(psi)+cos(phi)*cos(psi) cos(phi)*sin(theta)*sin(psi)-sin(phi)*cos(psi);
              -sin(theta) sin(phi)*cos(theta) cos(phi)*cos(theta)]; % body to inertia
@@ -90,10 +115,14 @@ for t = tspan
     
     alpha_dot = (u*vel_dot(3) - w*vel_dot(1))/(u^2 + w^2); % constant wind velocity
 
+    de = de + de_dot*dt;
+
  %% Save Data for plotting
     state(:,itr) = [pos;vel;att;rate];
     state_dot(:,itr) = [pos_dot;vel_dot;att_dot;rate_dot];
+    surfaces(:,itr) = [ua;ue;ur;da;de;dr];
     controls(:,itr) = [Forces;Moments];
+    wind_terms(:,itr) = [V;rad2deg(alpha);rad2deg(beta)];
     itr = itr + 1;
 end
 
