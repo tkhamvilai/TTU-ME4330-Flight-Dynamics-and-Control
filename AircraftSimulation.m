@@ -3,7 +3,7 @@ AircraftParameters
 AircraftInitialization
 
 %% Simulation Setup
-Tf = 100; % sec
+Tf = 500; % sec
 dt = 0.01;
 tspan = 0:dt:Tf;
 itr = 1;
@@ -60,6 +60,13 @@ for t = tspan
     % eI_theta = eI_theta + Ki_theta*e_theta;
     % eI_theta = clip(eI_theta,-1,1);
     % ue = Kp_theta*e_theta - Kd_theta*q + eI_theta;
+
+    % Altitude
+    K = [0.0479   23.6735   -0.4040  -25.7998   -1.0000];
+    h_ref = 1500;
+    u_ref = u_init;
+    % ue = -K*[u_ref - u; 0 - alpha; 0 - q; 0 - theta; h_ref - height];
+    ue = 2*(0.0001*(h_ref - height) - theta) - 2*q;
 
     % Roll-Yaw SAS
     % Kp = 1; % rate roll gain
