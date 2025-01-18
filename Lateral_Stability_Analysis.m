@@ -54,6 +54,7 @@ figure(1)
 lsim(sys,[],tspan,IC);
 
 %% Spiral
+% x = [r]
 A_spi = N_r_prime - L_r_prime*N_beta_prime/L_beta_prime;
 sys_spi = ss(A_spi,[],eye(1),0);
 damp(sys_spi)
@@ -62,6 +63,7 @@ figure(2)
 lsim(sys_spi,[],tspan,IC_spi);
 
 %% Roll
+% x = [p]
 A_roll = L_p_prime;
 sys_roll = ss(A_roll,[],eye(1),0);
 damp(sys_roll)
@@ -70,6 +72,7 @@ figure(3)
 lsim(sys_roll,[],tspan,IC_roll);
 
 %% Dutch-Roll
+% % x = [beta r]
 A_dr = [Y_beta/u0 -(1-Y_r/u0);
         N_beta_prime N_r_prime];
 sys_dr = ss(A_dr,[],eye(2),0);

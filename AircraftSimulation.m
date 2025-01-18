@@ -3,7 +3,7 @@ AircraftParameters
 AircraftInitialization
 
 %% Simulation Setup
-Tf = 200; % sec
+Tf = 100; % sec
 dt = 0.01;
 tspan = 0:dt:Tf;
 itr = 1;
@@ -41,7 +41,7 @@ for t = tspan
     Q = 1/2*rho*V^2; % dynamic pressure
 
  %% Controls
-    % free-fall
+    % Free-Fall
     ua = 0;
     ue = 0;
     ur = 0;
@@ -52,13 +52,53 @@ for t = tspan
     % Pitch SAS
     % ue = -q;
 
-    % Pitch CAS
-    ue = (deg2rad(15)-theta)-q;
+    % Pitch CAS (PID)
+    % Kp_theta = 1;
+    % Ki_theta = 0.01;
+    % Kd_theta = 1;
+    % e_theta = deg2rad(15) - theta;
+    % eI_theta = eI_theta + Ki_theta*e_theta;
+    % eI_theta = clip(eI_theta,-1,1);
+    % ue = Kp_theta*e_theta - Kd_theta*q + eI_theta;
+
+    % Roll-Yaw SAS
+    % Kp = 1; % rate roll gain
+    % if t > 1 && t < 30 % reference roll command
+    %     rp = deg2rad(3);
+    % elseif t > 40 && t < 70
+    %     rp = deg2rad(-3);
+    % else
+    %     rp = 0;
+    % end
+    % ua = rp - Kp*p;
+    % 
+    % rr = 0; % reference yaw command
+    % Kr = 1; % rate yaw gain
+    % % washout filter
+    % tau_w = 1;
+    % rw_interal_dot = (r - rw_interal)/tau_w;
+    % rw = r - rw_interal;
+    % ur = rr - Kr*rw;
+
+    % Bank-Heading CAS (LQR Full-State Feddback)
+    % phi_ref = deg2rad(5);
+    % psi_ref = deg2rad(10);
+    % K = [-0.2837   -0.6723   -0.4814   -0.9804   -0.7918
+    %      -0.0974    0.4676   -0.8867    0.4932   -0.6108];
+    % ua_ur = -K*[0-beta; 0-p; 0-r; phi_ref - phi; psi_ref - psi];
+    % ua = ua_ur(1);
+    % ur = ua_ur(2);
 
  %% Actuator Dynamics
-    da_dot = (ua - da)/0.1;
+    % with actuator dynamics
+    da_dot = (-ua - da)/0.1; % negative gain in tf, take care off +da to -L
     de_dot = (-ue - de)/0.1; % negative gain in tf, take care off +de to -M
-    dr_dot = (ur - dr)/0.1;
+    dr_dot = (-ur - dr)/0.1; % negative gain in tf, take care off +dr to -N
+    
+    % without actuator dynamics
+    % da = -ua;
+    % de = -ue;
+    % dr = -ur;
 
  %% Engine Model
     n = 2500; % rpm
@@ -115,7 +155,11 @@ for t = tspan
     
     alpha_dot = (u*vel_dot(3) - w*vel_dot(1))/(u^2 + w^2); % constant wind velocity
 
+    da = da + da_dot*dt;
     de = de + de_dot*dt;
+    dr = dr + dr_dot*dt;
+
+    % rw_interal = rw_interal + rw_interal_dot*dt;
 
  %% Save Data for plotting
     state(:,itr) = [pos;vel;att;rate];
@@ -189,4 +233,4 @@ plot(tspan, controls(6,:), 'k', 'LineWidth', 1.5)
 title('N'); xlabel('time'); grid on
 
 figure(3)
-visualization(state(1,:),-state(2,:),-state(3,:),-state(8,:),state(7,:),-state(9,:),0.1,1000,'cessna');
+visualization(state(1,:),-state(2,:),-state(3,:),-state(8,:),state(7,:),-state(9,:),0.1,100,'cessna');
