@@ -181,9 +181,9 @@ light;
 grid on;
 view(82.50,2);
 daspect([1 1 1]) ;
-xlabel('X (m)');
-ylabel('Y (m)');
-zlabel('Z (m)');
+xlabel('x (m)');
+ylabel('y (m)');
+zlabel('h (m)');
 cd (cur_dir);
 function trajectory_old(x,y,z,pitch,roll,yaw,scale_factor,step)
 if (length(x)~=length(y))||(length(x)~=length(z))||(length(y)~=length(z))

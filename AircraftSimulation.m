@@ -14,6 +14,8 @@ surfaces = zeros(6,length(tspan));
 controls = zeros(6,length(tspan));
 wind_terms = zeros(3,length(tspan));
 
+u_rpm = 2500; % rpm setpoint
+
 for t = tspan
  %% Atmospheric Model
     height = -pos(3);
@@ -62,17 +64,21 @@ for t = tspan
     % ue = Kp_theta*e_theta - Kd_theta*q + eI_theta;
 
     % Altitude
-    K = [0.0479   23.6735   -0.4040  -25.7998   -1.0000];
-    h_ref = 1500;
-    u_ref = u_init;
-    % ue = -K*[u_ref - u; 0 - alpha; 0 - q; 0 - theta; h_ref - height];
-    ue = 2*(0.0001*(h_ref - height) - theta) - 2*q;
+    % h_ref = 1800;
+    % h_err = clip(0.01*(h_ref - height) - 0.01*w, -deg2rad(15), deg2rad(15));
+    % Kp_theta = 1;
+    % Ki_theta = 0.01;
+    % Kd_theta = 2;
+    % e_theta = h_err - theta;
+    % eI_theta = eI_theta + Ki_theta*e_theta;
+    % eI_theta = clip(eI_theta,-1,1);
+    % ue = Kp_theta*e_theta - Kd_theta*q + eI_theta;
 
     % Roll-Yaw SAS
-    % Kp = 1; % rate roll gain
-    % if t > 1 && t < 30 % reference roll command
+    % Kp = 0.75; % rate roll gain
+    % if t > 10 && t < 40 % reference roll command
     %     rp = deg2rad(3);
-    % elseif t > 40 && t < 70
+    % elseif t > 50 && t < 80
     %     rp = deg2rad(-3);
     % else
     %     rp = 0;
@@ -96,22 +102,43 @@ for t = tspan
     % ua = ua_ur(1);
     % ur = ua_ur(2);
 
+    % Velocity Hold
+    % u_ref = 55; % m/s
+    % e_u = u_ref - u;
+    % eI_u = eI_u + e_u;
+    % eI_u = clip(eI_u,-500,500);
+    % u_rpm = clip(2500 + 2*e_u + eI_u, idle_rpm, max_rpm);
+    %
+    % Kp_theta = 1;
+    % Ki_theta = 0.01;
+    % Kd_theta = 1;
+    % e_theta = deg2rad(0) - theta;
+    % eI_theta = eI_theta + Ki_theta*e_theta;
+    % eI_theta = clip(eI_theta,-1,1);
+    % ue = Kp_theta*e_theta - Kd_theta*q + eI_theta;
+
  %% Actuator Dynamics
     % with actuator dynamics
     da_dot = (-ua - da)/0.1; % negative gain in tf, take care off +da to -L
     de_dot = (-ue - de)/0.1; % negative gain in tf, take care off +de to -M
     dr_dot = (-ur - dr)/0.1; % negative gain in tf, take care off +dr to -N
+    n_rpm_dot = (u_rpm - n_rpm)/0.1;
     
     % without actuator dynamics
     % da = -ua;
     % de = -ue;
     % dr = -ur;
+    % n_rpm = u_rpm;
 
  %% Engine Model
-    n = 2500; % rpm
     Pz = 20; % mainfold pressure ["Hg] 35mps
-    P = 0.7355*(-326.5+(0.00412*(Pz+7.4)*(n+2010)+(408-0.0965*n)*(1-rho/1.225))); % engine power
-    dpt = 0.08696+191.18*(P*2/rho/V^3);
+    P = 0.7355*(-326.5+(0.00412*(Pz+7.4)*(n_rpm+2010)+(408-0.0965*n_rpm)*(1-rho/1.225))); % engine power
+    if P < 0
+        P = 0;
+        dpt = 0;
+    else
+        dpt = 0.08696+191.18*(P*2/rho/V^3);
+    end
 
  %% Aerodynamics Model
     CL = CL_0 + CL_alpha*alpha + CL_alpha_dot*alpha_dot + CL_q*q*c/2/V + CL_Mach*Mach + CL_de*de;
@@ -165,6 +192,7 @@ for t = tspan
     da = da + da_dot*dt;
     de = de + de_dot*dt;
     dr = dr + dr_dot*dt;
+    n_rpm = n_rpm + n_rpm_dot*dt;
 
     % rw_interal = rw_interal + rw_interal_dot*dt;
 
