@@ -10,7 +10,7 @@ itr = 1;
 
 state = zeros(12,length(tspan));
 state_dot = zeros(12,length(tspan));
-surfaces = zeros(6,length(tspan));
+surfaces = zeros(9,length(tspan));
 controls = zeros(6,length(tspan));
 wind_terms = zeros(3,length(tspan));
 
@@ -49,10 +49,11 @@ for t = tspan
     ur = 0;
 
     % Climb
-    % ue = deg2rad(2.5);
+    % ue = deg2rad(1.5); % pull
+    % u_rpm = 2700; % full throttle
     
     % Pitch SAS
-    % ue = -q;
+    ue = -q;
 
     % Pitch CAS (PID)
     % Kp_theta = 1;
@@ -155,7 +156,7 @@ for t = tspan
     Cz = CxCz(2) + Cz_dpt*dpt;
     
     Cl = Cl_beta*beta + Cl_da*da + Cl_dr*dr + b/2/V*Cl_r*r;
-    Cm = Cm_alpha*alpha + Cm_Mach*Mach + Cm_de*de + c/2/V*(Cm_q*q + Cm_alpha_dot*alpha_dot) + xR*CL + Cm_dpt*dpt;
+    Cm = Cm_alpha*alpha + Cm_Mach*Mach + Cm_de*de + c/2/V*(Cm_q*q + 0*Cm_alpha_dot*alpha_dot) + xR*CL + Cm_dpt*dpt;
     Cn = Cn_beta*beta + Cn_da*da + Cn_dr*dr + b/2/V*(Cn_p*p + Cn_r*r);
     
     X = Q*S*Cx;
@@ -199,7 +200,7 @@ for t = tspan
  %% Save Data for plotting
     state(:,itr) = [pos;vel;att;rate];
     state_dot(:,itr) = [pos_dot;vel_dot;att_dot;rate_dot];
-    surfaces(:,itr) = [ua;ue;ur;da;de;dr];
+    surfaces(:,itr) = [ua;ue;ur;u_rpm;da;de;dr;dpt;n_rpm];
     controls(:,itr) = [Forces;Moments];
     wind_terms(:,itr) = [V;rad2deg(alpha);rad2deg(beta)];
     itr = itr + 1;
@@ -207,65 +208,77 @@ end
 
 %% Plots
 figure(1)
-subplot(12,1,1)
-plot(tspan, state(1,:), 'k', 'LineWidth', 1.5)
-title('x'); xlabel('time'); grid on
-subplot(12,1,2)
-plot(tspan, state(2,:), 'k', 'LineWidth', 1.5)
-title('y'); xlabel('time'); grid on
-subplot(12,1,3)
-plot(tspan, -state(3,:), 'k', 'LineWidth', 1.5)
-title('h'); xlabel('time'); grid on
+subplot(4,1,1)
+plot(tspan,state(1,:),'-r',tspan,state(2,:),'-g',tspan,-state(3,:),'-b');
+legend('x','y','h')
+xlabel('time (s)')
+ylabel('position (m)')
+grid on; grid minor
 
-subplot(12,1,4)
-plot(tspan, state(4,:), 'k', 'LineWidth', 1.5)
-title('u'); xlabel('time'); grid on
-subplot(12,1,5)
-plot(tspan, state(5,:), 'k', 'LineWidth', 1.5)
-title('v'); xlabel('time'); grid on
-subplot(12,1,6)
-plot(tspan, state(6,:), 'k', 'LineWidth', 1.5)
-title('w'); xlabel('time'); grid on
+subplot(4,1,2)
+plot(tspan,state(4,:),'-r',tspan,state(5,:),'-g',tspan,state(6,:),'-b');
+legend('u','v','w')
+xlabel('time (s)')
+ylabel('velocity (m/s)')
+grid on; grid minor
 
-subplot(12,1,7)
-plot(tspan, state(7,:).*180/pi, 'k', 'LineWidth', 1.5)
-title('phi (degree)'); xlabel('time'); grid on
-subplot(12,1,8)
-plot(tspan, state(8,:).*180/pi, 'k', 'LineWidth', 1.5)
-title('theta (degree)'); xlabel('time'); grid on
-subplot(12,1,9)
-plot(tspan, state(9,:).*180/pi, 'k', 'LineWidth', 1.5)
-title('psi (degree)'); xlabel('time'); grid on
+subplot(4,1,3)
+plot(tspan,state(7,:)*180/pi,'-r',tspan,state(8,:)*180/pi,'-g',tspan,state(9,:)*180/pi,'-b');
+legend('phi','theta','psi')
+xlabel('time (s)')
+ylabel('Euler angles (deg)')
+grid on; grid minor
 
-subplot(12,1,10)
-plot(tspan, state(10,:), 'k', 'LineWidth', 1.5)
-title('p'); xlabel('time'); grid on
-subplot(12,1,11)
-plot(tspan, state(11,:), 'k', 'LineWidth', 1.5)
-title('q'); xlabel('time'); grid on
-subplot(12,1,12)
-plot(tspan, state(12,:), 'k', 'LineWidth', 1.5)
-title('r'); xlabel('time'); grid on
+subplot(4,1,4)
+plot(tspan,state(10,:)*180/pi,'-r',tspan,state(11,:)*180/pi,'-g',tspan,state(12,:)*180/pi,'-b');
+legend('p','q','r')
+xlabel('time (s)')
+ylabel('angular velocity (deg/s)')
+grid on; grid minor
 
 figure(2)
-subplot(6,1,1)
-plot(tspan, controls(1,:), 'k', 'LineWidth', 1.5)
-title('X'); xlabel('time'); grid on
-subplot(6,1,2)
-plot(tspan, controls(2,:), 'k', 'LineWidth', 1.5)
-title('Y'); xlabel('time'); grid on
-subplot(6,1,3)
-plot(tspan, controls(3,:), 'k', 'LineWidth', 1.5)
-title('Z'); xlabel('time'); grid on
-subplot(6,1,4)
-plot(tspan, controls(4,:), 'k', 'LineWidth', 1.5)
-title('L'); xlabel('time'); grid on
-subplot(6,1,5)
-plot(tspan, controls(5,:), 'k', 'LineWidth', 1.5)
-title('M'); xlabel('time'); grid on
-subplot(6,1,6)
-plot(tspan, controls(6,:), 'k', 'LineWidth', 1.5)
-title('N'); xlabel('time'); grid on
+subplot(2,1,1)
+plot(tspan,controls(1,:),'-r',tspan,controls(2,:),'-g',tspan,controls(3,:),'-b');
+legend('X','Y','Z')
+xlabel('time (s)'); 
+ylabel('Forces (N)')
+grid on; grid minor
+
+subplot(2,1,2)
+plot(tspan,controls(4,:),'-r',tspan,controls(5,:),'-g',tspan,controls(6,:),'-b');
+legend('L','M','N')
+xlabel('time (s)'); 
+ylabel('Moments (Nm)')
+grid on; grid minor
 
 figure(3)
-visualization(state(1,:),-state(2,:),-state(3,:),-state(8,:),state(7,:),-state(9,:),0.1,100,'cessna');
+subplot(4,1,1)
+plot(tspan,surfaces(1,:),'-r',tspan,surfaces(2,:),'-g',tspan,surfaces(3,:),'-b');
+legend('ua','ue','ur')
+xlabel('time (s)'); 
+ylabel('Control Commands')
+grid on; grid minor
+
+subplot(4,1,2)
+plot(tspan,surfaces(5,:)*180/pi,'-r',tspan,surfaces(6,:)*180/pi,'-g',tspan,surfaces(7,:)*180/pi,'-b');
+legend('da','de','dr')
+xlabel('time (s)'); 
+ylabel('Surface Deflection (deg)')
+grid on; grid minor
+
+subplot(4,1,3)
+plot(tspan,surfaces(4,:),'-r',tspan,surfaces(9,:),'-g');
+legend('u_{rpm}','n_{rpm}')
+xlabel('time (s)'); 
+ylabel('RPM')
+grid on; grid minor
+
+subplot(4,1,4)
+plot(tspan,surfaces(8,:),'-r');
+legend('dpt')
+xlabel('time (s)'); 
+ylabel('throttle setting')
+grid on; grid minor
+
+figure(5)
+visualization(state(1,:),-state(2,:),-state(3,:),-state(8,:),state(7,:),-state(9,:),0.01,3000,'cessna');
