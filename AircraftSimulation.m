@@ -49,11 +49,11 @@ for t = tspan
     ur = 0;
 
     % Climb
-    % ue = deg2rad(1.5); % pull
-    % u_rpm = 2700; % full throttle
+    ue = deg2rad(2.5); % pull
+    u_rpm = 2700; % full throttle
     
     % Pitch SAS
-    ue = -q;
+    % ue = -q;
 
     % Pitch CAS (PID)
     % Kp_theta = 1;
@@ -151,7 +151,7 @@ for t = tspan
     CDCL = [CD; CL];
     A = [-cos(alpha)*cos(beta) -sin(alpha)*cos(beta); sin(alpha) -cos(alpha)];
     B = [-sin(beta); 0];
-    CxCz = A\(CDCL - B);
+    CxCz = A\(CDCL - B*Cy);
     Cx = CxCz(1) + Cx_dpt*dpt;
     Cz = CxCz(2) + Cz_dpt*dpt;
     
