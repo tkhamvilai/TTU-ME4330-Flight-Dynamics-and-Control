@@ -9,7 +9,7 @@ S = 17.0942; % wing area, m^2
 AR = b^2/S; % wing aspect ratio
 e = 0.98; % efficiency factor
 g = 9.80665; % gravity, m/s^2
-max_rpm = 3000; % engine maximum RPM
+max_rpm = 2700; % engine maximum RPM
 idle_rpm = 900; % engine idle RPM
 
 % stability and control derivatives
@@ -21,7 +21,7 @@ CL_alpha = 4.44;
 CL_alpha_dot = 0.0;
 CL_q = 3.8;
 CL_Mach = 0.0;
-CL_de = -0.355;
+CL_de = 0.355;
 Cm_alpha = -0.683;
 Cm_alpha_dot = -4.36;
 Cm_q = -9.96;

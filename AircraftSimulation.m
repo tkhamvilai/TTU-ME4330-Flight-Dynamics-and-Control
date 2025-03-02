@@ -49,13 +49,14 @@ for t = tspan
     ur = 0;
 
     % Climb
-    ue = deg2rad(2.5); % pull
-    u_rpm = 2700; % full throttle
+    % ue = deg2rad(5); % pull
+    % u_rpm = max_rpm; % full throttle
     
     % Pitch SAS
     % ue = -q;
 
-    % Pitch CAS (PID)
+    % Pitch CAS (PID), climb at constant pitch angle
+    % u_rpm = max_rpm; % full throttle
     % Kp_theta = 1;
     % Ki_theta = 0.01;
     % Kd_theta = 1;
@@ -64,23 +65,24 @@ for t = tspan
     % eI_theta = clip(eI_theta,-1,1);
     % ue = Kp_theta*e_theta - Kd_theta*q + eI_theta;
 
-    % Altitude
-    % h_ref = 1800;
-    % h_err = clip(0.01*(h_ref - height) - 0.01*w, -deg2rad(15), deg2rad(15));
-    % Kp_theta = 1;
+    % Altitude, climb and level out
+    % h_ref = 1600;
+    % h_err = clip(0.01*(h_ref - height) - 0.01*(-w), -deg2rad(15), deg2rad(15)); % assumed pitch angle limit at 15 deg
+    % Kp_theta = 3;
     % Ki_theta = 0.01;
     % Kd_theta = 2;
     % e_theta = h_err - theta;
     % eI_theta = eI_theta + Ki_theta*e_theta;
     % eI_theta = clip(eI_theta,-1,1);
     % ue = Kp_theta*e_theta - Kd_theta*q + eI_theta;
+    % u_rpm = 2500 + clip(3*(h_ref - height), -200, 200); % 200 is a rpm change limit
 
     % Roll-Yaw SAS
     % Kp = 0.75; % rate roll gain
     % if t > 10 && t < 40 % reference roll command
-    %     rp = deg2rad(3);
+    %     rp = deg2rad(1);
     % elseif t > 50 && t < 80
-    %     rp = deg2rad(-3);
+    %     rp = deg2rad(-1);
     % else
     %     rp = 0;
     % end
@@ -95,6 +97,7 @@ for t = tspan
     % ur = rr - Kr*rw;
 
     % Bank-Heading CAS (LQR Full-State Feddback)
+    % Forward-slip landing
     % phi_ref = deg2rad(5);
     % psi_ref = deg2rad(10);
     % K = [-0.2837   -0.6723   -0.4814   -0.9804   -0.7918
@@ -108,12 +111,28 @@ for t = tspan
     % e_u = u_ref - u;
     % eI_u = eI_u + e_u;
     % eI_u = clip(eI_u,-500,500);
-    % u_rpm = clip(2500 + 2*e_u + eI_u, idle_rpm, max_rpm);
-    %
+    % u_rpm = clip(2500 + 2*e_u + eI_u, idle_rpm, max_rpm + 300); % need more thrust here
+    % 
     % Kp_theta = 1;
     % Ki_theta = 0.01;
     % Kd_theta = 1;
     % e_theta = deg2rad(0) - theta;
+    % eI_theta = eI_theta + Ki_theta*e_theta;
+    % eI_theta = clip(eI_theta,-1,1);
+    % ue = Kp_theta*e_theta - Kd_theta*q + eI_theta;
+
+    % Altitude Hold Velocity Hold (Cruise control)
+    % u_ref = 55; % m/s
+    % e_u = u_ref - u;
+    % eI_u = eI_u + e_u;
+    % eI_u = clip(eI_u,-500,500);
+    % u_rpm = clip(2500 + 2*e_u + eI_u, idle_rpm, max_rpm + 300); % need more thrust here
+    % h_ref = 1600;
+    % h_err = clip(0.01*(h_ref - height) - 0.01*(-w), -deg2rad(15), deg2rad(15)); % assumed pitch angle limit at 15 deg
+    % Kp_theta = 3;
+    % Ki_theta = 0.01;
+    % Kd_theta = 2;
+    % e_theta = h_err - theta;
     % eI_theta = eI_theta + Ki_theta*e_theta;
     % eI_theta = clip(eI_theta,-1,1);
     % ue = Kp_theta*e_theta - Kd_theta*q + eI_theta;
