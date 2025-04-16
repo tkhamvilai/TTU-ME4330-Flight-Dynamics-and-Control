@@ -53,7 +53,7 @@ for t = tspan
     % u_rpm = max_rpm; % full throttle
     
     % Pitch SAS
-    % ue = -q;
+    ue = -q;
 
     % Pitch CAS (PID), climb at constant pitch angle
     % u_rpm = max_rpm; % full throttle
