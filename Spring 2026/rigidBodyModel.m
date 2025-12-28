@@ -18,10 +18,10 @@ rate_dot = zeros(3,length(tspan));
 
 %% Parameters
 m = 10;         % mass, kg
-J = eye(3);     % moment of inertia, kg-m^2
+J = 10*eye(3);  % moment of inertia, kg-m^2
 g = [0;0;9.81]; % gravity m/s^2
-Forces  = [1;0;0] .* ones(3,length(tspan));   % N
-Moments = [0;0;0.5] .* ones(3,length(tspan)); % N-m
+Forces  = [200; 0; -m*9.81 - 10] .* ones(3,length(tspan)); % body-frame, N
+Moments = [0; 0; 1] .* ones(3,length(tspan)); % body-frame, N-m
 
 %% Run Simulation
 for t = tspan
@@ -99,3 +99,18 @@ grid on; grid minor
 xlabel('time (s)'); ylabel('moment (N-m)');
 legend('L','M','N')
 
+%% Animation
+h = Aero.Animation; % create MATLAB animation object
+h.createBody('pa24-250_orange.ac','Ac3d'); % https://www.mathworks.com/help/aerotbx/ug/ac3d-files-and-thumbnails-overview.html
+h.Bodies{1}.TimeSeriesSource = [tspan' pos' att']; % assign the simulation result to the animation object
+
+% setup camera
+h.Camera.ViewAngle = 5;
+% h.Camera.ViewExtent = h.Camera.ViewExtent*10;
+% h.Camera.Offset = h.Camera.Offset*10;
+h.Camera.PositionFcn = @cameraChaser;
+
+% run the animation
+h.initialize();
+h.show();
+h.play();
