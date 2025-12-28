@@ -1,7 +1,7 @@
 clear; clc; close all
 
 %% Simulation Setup
-Tf = 10; % sec
+Tf = 100; % sec
 dt = 0.01;
 tspan = 0:dt:Tf;
 itr = 1;
@@ -53,49 +53,14 @@ for t = tspan
     rate_dot(:,itr) = J\(Moments(:,itr)-cross(rate(:,itr),J*rate(:,itr)));
 
     % Numerical Integration
-    if t < tspan(end)
-        pos(:,itr+1)  = pos(:,itr) + pos_dot(:,itr)*dt;
-        vel(:,itr+1)  = vel(:,itr) + vel_dot(:,itr)*dt;
-        att(:,itr+1)  = wrapToPi(att(:,itr) + att_dot(:,itr)*dt);
-        rate(:,itr+1) = rate(:,itr) + rate_dot(:,itr)*dt;
-        itr = itr + 1;
-    end
+    pos(:,itr+1)  = pos(:,itr) + pos_dot(:,itr)*dt;
+    vel(:,itr+1)  = vel(:,itr) + vel_dot(:,itr)*dt;
+    att(:,itr+1)  = wrapToPi(att(:,itr) + att_dot(:,itr)*dt);
+    rate(:,itr+1) = rate(:,itr) + rate_dot(:,itr)*dt;
+    itr = itr + 1;
 end
 
 %% Plot
 subplot(3,2,1);
-plot(tspan, pos(1,:), '-r', tspan, pos(2,:), '-g', tspan, pos(3,:), '-b');
-grid on; grid minor
-xlabel('time (s)'); ylabel('position (m)');
-legend('x','y','z')
-
-subplot(3,2,2);
-plot(tspan, vel(1,:), '-r', tspan, vel(2,:), '-g', tspan, vel(3,:), '-b');
-grid on; grid minor
-xlabel('time (s)'); ylabel('velocity (m)');
-legend('u','v','w')
-
-subplot(3,2,3);
-plot(tspan, att(1,:), '-r', tspan, att(2,:), '-g', tspan, att(3,:), '-b');
-grid on; grid minor
-xlabel('time (s)'); ylabel('angle (rad)');
-legend('\phi','\theta','\psi')
-
-subplot(3,2,4);
-plot(tspan, rate(1,:), '-r', tspan, rate(2,:), '-g', tspan, rate(3,:), '-b');
-grid on; grid minor
-xlabel('time (s)'); ylabel('angular velocity (rad/s)');
-legend('p','q','r')
-
-subplot(3,2,5);
-plot(tspan, Forces(1,:), '-r', tspan, Forces(2,:), '-g', tspan, Forces(3,:), '-b');
-grid on; grid minor
-xlabel('time (s)'); ylabel('forces (N)');
-legend('X','Y','Z')
-
-subplot(3,2,6);
-plot(tspan, Moments(1,:), '-r', tspan, Moments(2,:), '-g', tspan, Moments(3,:), '-b');
-grid on; grid minor
-xlabel('time (s)'); ylabel('moment (N-m)');
-legend('L','M','N')
-
+plot(tspan, pos(1,:), '-r', tspan, pos(1,:), '-g', tspan, pos(1,:), '-b');
+x
