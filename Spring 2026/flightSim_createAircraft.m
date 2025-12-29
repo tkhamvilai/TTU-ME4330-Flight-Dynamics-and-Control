@@ -150,8 +150,8 @@ state.CenterOfGravity  = [0 0 0];     % Center of Gravity [m]
 state.CenterOfPressure = [0 0 0];     % Center of Pressure [m]
 
 % set initial condition (pick one)
-[state, control] = spiralInitialCondition(state, AltitudeMSL);
-% [state, control] = cruiseInitialCondition(state, AltitudeMSL);
+% [state, control] = spiralInitialCondition(state, AltitudeMSL);
+[state, control] = cruiseInitialCondition(state, AltitudeMSL);
 
 %% Initial States
 function [state_out, control] = spiralInitialCondition(state_in, AltitudeMSL)

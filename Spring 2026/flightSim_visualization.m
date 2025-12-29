@@ -1,18 +1,25 @@
 close all
 %% Take the results
 tspan = out.tout';
-pos(1,:)  = out.StatesOut.Xe.Data';
-pos(2,:)  = out.StatesOut.Ye.Data';
-pos(3,:)  = out.StatesOut.Ze.Data';
-vel(1,:)  = out.StatesOut.u.Data';
-vel(2,:)  = out.StatesOut.v.Data';
-vel(3,:)  = out.StatesOut.w.Data';
-att(1,:)  = out.StatesOut.phi.Data';
-att(2,:)  = out.StatesOut.theta.Data';
-att(3,:)  = out.StatesOut.psi.Data';
-rate(1,:) = out.StatesOut.p.Data';
-rate(2,:) = out.StatesOut.q.Data';
-rate(3,:) = out.StatesOut.r.Data';
+pos(1,:)  = out.SimOut.Xe.Data';
+pos(2,:)  = out.SimOut.Ye.Data';
+pos(3,:)  = out.SimOut.Ze.Data';
+vel(1,:)  = out.SimOut.u.Data';
+vel(2,:)  = out.SimOut.v.Data';
+vel(3,:)  = out.SimOut.w.Data';
+att(1,:)  = out.SimOut.phi.Data';
+att(2,:)  = out.SimOut.theta.Data';
+att(3,:)  = out.SimOut.psi.Data';
+rate(1,:) = out.SimOut.p.Data';
+rate(2,:) = out.SimOut.q.Data';
+rate(3,:) = out.SimOut.r.Data';
+
+Forces(1,:) = out.SimOut.X.Data';
+Forces(2,:) = out.SimOut.Y.Data';
+Forces(3,:) = out.SimOut.Z.Data';
+Moments(1,:) = out.SimOut.L.Data';
+Moments(2,:) = out.SimOut.M.Data';
+Moments(3,:) = out.SimOut.N.Data';
 
 %% Plot
 subplot(3,2,1);
@@ -39,17 +46,17 @@ grid on; grid minor
 xlabel('time (s)'); ylabel('angular velocity (rad/s)');
 legend('p','q','r')
 
-% subplot(3,2,5);
-% plot(tspan, Forces(1,:), '-r', tspan, Forces(2,:), '-g', tspan, Forces(3,:), '-b');
-% grid on; grid minor
-% xlabel('time (s)'); ylabel('forces (N)');
-% legend('X','Y','Z')
-% 
-% subplot(3,2,6);
-% plot(tspan, Moments(1,:), '-r', tspan, Moments(2,:), '-g', tspan, Moments(3,:), '-b');
-% grid on; grid minor
-% xlabel('time (s)'); ylabel('moment (N-m)');
-% legend('L','M','N')
+subplot(3,2,5);
+plot(tspan, Forces(1,:), '-r', tspan, Forces(2,:), '-g', tspan, Forces(3,:), '-b');
+grid on; grid minor
+xlabel('time (s)'); ylabel('forces (N)');
+legend('X','Y','Z')
+
+subplot(3,2,6);
+plot(tspan, Moments(1,:), '-r', tspan, Moments(2,:), '-g', tspan, Moments(3,:), '-b');
+grid on; grid minor
+xlabel('time (s)'); ylabel('moment (N-m)');
+legend('L','M','N')
 
 figure;
 % position, attitude, size_scale_factor, plot_step, model_selector

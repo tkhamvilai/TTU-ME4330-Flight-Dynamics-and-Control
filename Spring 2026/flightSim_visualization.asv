@@ -1,9 +1,9 @@
 close all
 %% Take the results
 tspan = out.tout';
-pos(1,:)  = out.StatesOut.Xe.Data';
-pos(2,:)  = out.StatesOut.Ye.Data';
-pos(3,:)  = out.StatesOut.Ze.Data';
+pos(1,:)  = out.SimOut.Xe.Data';
+pos(2,:)  = out.SimOut.Ye.Data';
+pos(3,:)  = out.SimOut.Ze.Data';
 vel(1,:)  = out.StatesOut.u.Data';
 vel(2,:)  = out.StatesOut.v.Data';
 vel(3,:)  = out.StatesOut.w.Data';
@@ -53,8 +53,8 @@ legend('p','q','r')
 
 figure;
 % position, attitude, size_scale_factor, plot_step, model_selector
-% trajectory_plot(pos, att, 100, 20, 'cessna');
-trajectory_plot(pos, [att(1,:)*0, att(2,, 100, 20, 'cessna');
+trajectory_plot(pos, att, 100, 20, 'cessna');
+% trajectory_plot(pos, [att(1,:)*0; att(2,:)*0; att(3,:)], 100, 20, 'cessna');
 
 %% Animation
 h = Aero.Animation; % create MATLAB animation object
