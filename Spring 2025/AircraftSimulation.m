@@ -49,11 +49,11 @@ for t = tspan
     ur = 0;
 
     % Climb
-    % ue = deg2rad(5); % pull
-    % u_rpm = max_rpm; % full throttle
+    ue = deg2rad(5); % pull
+    u_rpm = max_rpm; % full throttle
     
     % Pitch SAS
-    ue = -q;
+    % ue = -q;
 
     % Pitch CAS (PID), climb at constant pitch angle
     % u_rpm = max_rpm; % full throttle
@@ -300,4 +300,5 @@ ylabel('throttle setting')
 grid on; grid minor
 
 figure(5)
-visualization(state(1,:),-state(2,:),-state(3,:),-state(8,:),state(7,:),-state(9,:),0.01,3000,'cessna');
+% visualization(state(1,:),-state(2,:),-state(3,:),-state(8,:),state(7,:),-state(9,:),0.01,3000,'cessna');
+trajectory3(state(1,:),-state(2,:),-state(3,:),-state(8,:),state(7,:),-state(9,:),0.01,3000,'gripen');

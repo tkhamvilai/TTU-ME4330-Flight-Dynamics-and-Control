@@ -10,7 +10,7 @@ function cameraChaser(~,Bodies,h)
 % chaseSpeed between 0 and 1
 % 0 - no chase
 % 1 - always at the target
-chaseSpeed = 0.5; %
+chaseSpeed = 0.95; %
 
 if ~isempty(Bodies) && isa(Bodies, 'cell') && isa(Bodies{1},'Aero.Body')
     target     = Bodies{1};

@@ -20,24 +20,24 @@ rate_dot = zeros(3,length(tspan));
 m = 10;         % mass, kg
 J = 10*eye(3);  % moment of inertia, kg-m^2
 g = [0;0;9.81]; % gravity m/s^2
-Forces  = [200; 0; -m*9.81 - 10] .* ones(3,length(tspan)); % body-frame, N
-Moments = [0; 0; 1] .* ones(3,length(tspan)); % body-frame, N-m
+Forces  = [2000; 0; -m*9.81] .* ones(3,length(tspan)); % body-frame, N
+Moments = [1; 0; 0] .* ones(3,length(tspan)); % body-frame, N-m
 
 %% Run Simulation
 for t = tspan
     % Extract States
-    x     = pos(1);  % position in x-axis
-    y     = pos(2);  % position in y-axis
-    z     = pos(3);  % position in z-axis
-    u     = vel(1);  % velocity in x-axis
-    v     = vel(2);  % velocity in y-axis
-    w     = vel(3);  % velocity in z-axis
-    phi   = att(1);  % roll angle, angular position around x-axis
-    theta = att(2);  % pitch angle, angular position around y-axis
-    psi   = att(3);  % yaw angle, angular position around z-axis
-    p     = rate(1); % angular velocity around x-axis
-    q     = rate(2); % angular velocity around y-axis
-    r     = rate(3); % angular velocity around z-axis
+    x     = pos(1,itr);  % position in x-axis
+    y     = pos(2,itr);  % position in y-axis
+    z     = pos(3,itr);  % position in z-axis
+    u     = vel(1,itr);  % velocity in x-axis
+    v     = vel(2,itr);  % velocity in y-axis
+    w     = vel(3,itr);  % velocity in z-axis
+    phi   = att(1,itr);  % roll angle, angular position around x-axis
+    theta = att(2,itr);  % pitch angle, angular position around y-axis
+    psi   = att(3,itr);  % yaw angle, angular position around z-axis
+    p     = rate(1,itr); % angular velocity around x-axis
+    q     = rate(2,itr); % angular velocity around y-axis
+    r     = rate(3,itr); % angular velocity around z-axis
 
     % Rigid-Body Dynamics       
     C_b2i = [ cos(theta)*cos(psi) sin(phi)*sin(theta)*cos(psi)-cos(phi)*sin(psi) cos(phi)*sin(theta)*cos(psi)+sin(phi)*sin(psi);
@@ -99,13 +99,17 @@ grid on; grid minor
 xlabel('time (s)'); ylabel('moment (N-m)');
 legend('L','M','N')
 
+figure;
+% position, attitude, size_scale_factor, plot_step, model_selector
+trajectory_plot(pos, att, 100, 100, 'cessna');
+
 %% Animation
 h = Aero.Animation; % create MATLAB animation object
 h.createBody('pa24-250_orange.ac','Ac3d'); % https://www.mathworks.com/help/aerotbx/ug/ac3d-files-and-thumbnails-overview.html
 h.Bodies{1}.TimeSeriesSource = [tspan' pos' att']; % assign the simulation result to the animation object
 
 % setup camera
-h.Camera.ViewAngle = 5;
+% h.Camera.ViewAngle = 5;
 % h.Camera.ViewExtent = h.Camera.ViewExtent*10;
 % h.Camera.Offset = h.Camera.Offset*10;
 h.Camera.PositionFcn = @cameraChaser;
