@@ -118,11 +118,12 @@ RudderCoefficients = {
     'CY', 'Rudder', 0.1158;
     };
 
+% thrust curve
 Thrust = 2300;
-        prop = Simulink.LookupTable;
-        prop.Table.Value = Thrust*(1+tanh(-3:3));
-        prop.Breakpoints(1).Value = (1/6)*(3+(-3:3));
-        prop.Breakpoints(1).FieldName = "Propeller";
+prop = Simulink.LookupTable;
+prop.Table.Value = Thrust*(1+tanh(-3:3));
+prop.Breakpoints(1).Value = (1/6)*(3+(-3:3));
+prop.Breakpoints(1).FieldName = "Propeller";
         
 PropellerCoefficients = {
     'CX', 'Propeller', prop;
