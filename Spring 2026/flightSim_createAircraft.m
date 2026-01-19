@@ -144,15 +144,16 @@ Environment = aircraftEnvironment(aircraft,"COESA",AltitudeMSL); % rho, P, T, a
 
 state = fixedWingState(aircraft, Environment);
 state.Mass              = 2288.231; % mass [kg]
-state.Inertia.Variables = [ 5788.0     0.0   117.6; 
+state.Inertia.Variables = [ 5788.0     0.0  -117.6; 
                                0.0  6928.9     0.0;
                             -117.6     0.0 11578.3]; % Moment of Inertia [kg*m^2]
 state.CenterOfGravity  = [0 0 0];     % Center of Gravity [m]
 state.CenterOfPressure = [0 0 0];     % Center of Pressure [m]
 
 % set initial condition (pick one)
-% [state, control] = spiralInitialCondition(state, AltitudeMSL);
-[state, control] = cruiseInitialCondition(state, AltitudeMSL);
+[state, control] = spiralInitialCondition(state, AltitudeMSL);
+% [state, control] = cruiseInitialCondition(state, AltitudeMSL);
+disp('Aircraft Created')
 
 %% Initial States
 function [state_out, control] = spiralInitialCondition(state_in, AltitudeMSL)
@@ -194,5 +195,5 @@ function [state_out, control] = cruiseInitialCondition(state_in, AltitudeMSL)
     control.Throttle  = 0.5;                    % Initial Throttle Setting [0-1]
     control.Aileron   = -0.104711430293605;     % Initial Aileron Deflection [rad]
     control.Elevator  = -0.069872522954441;     % Initial Elevator Deflection [rad]
-    control.Rudder    = -2.150423302540860e-04; % Initial Rudder Deflection [rad]
+    control.Rudder    = 0;%-2.150423302540860e-04; % Initial Rudder Deflection [rad]
 end

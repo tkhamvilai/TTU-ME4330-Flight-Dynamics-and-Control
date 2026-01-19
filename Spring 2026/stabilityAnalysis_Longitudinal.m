@@ -63,7 +63,7 @@ M_alpha   = Q*S*c/Jy*Cm_alpha;
 M_alpha2  = Q*S*c/Jy*Cm_alpha2*(2*alpha_0);
 M_beta2   = Q*S*c/Jy*Cm_beta2*(2*beta_0);
 M_q       = Q*S*c/Jy/u0*Cm_q*c;
-M_r       = Q*S*c/Jy/u0/2*Cm_r*b;
+M_r       = Q*S*c/Jy/u0*Cm_r*(b/2);
 M_dt      = 0;
 M_de      = Q*S*c/Jy*Cm_de;
 

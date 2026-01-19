@@ -1,4 +1,5 @@
 close all
+
 %% Take the results
 tspan = out.tout';
 pos(1,:)  = out.SimOut.Xe.Data';
@@ -35,9 +36,9 @@ xlabel('time (s)'); ylabel('velocity (m)');
 legend('u','v','w')
 
 subplot(3,2,3);
-plot(tspan, att(1,:), '-r', tspan, att(2,:), '-g', tspan, att(3,:), '-b');
+plot(tspan, att(1,:)*180/pi, '-r', tspan, att(2,:)*180/pi, '-g', tspan, att(3,:)*180/pi, '-b');
 grid on; grid minor
-xlabel('time (s)'); ylabel('angle (rad)');
+xlabel('time (s)'); ylabel('angle (deg)');
 legend('\phi','\theta','\psi')
 
 subplot(3,2,4);
@@ -60,7 +61,7 @@ legend('L','M','N')
 
 figure;
 % position, attitude, size_scale_factor, plot_step, model_selector
-trajectory_plot(pos, att, 100, 20, 'cessna');
+trajectory_plot(pos, att, 100, 50, 'cessna');
 % trajectory_plot(pos, [att(1,:)*0; att(2,:)*0; att(3,:)], 100, 20, 'cessna');
 
 %% Animation
