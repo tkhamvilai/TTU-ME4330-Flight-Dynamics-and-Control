@@ -36,40 +36,70 @@ Cn_p      = getCoefficient(aircraft,"Cn","pb2V");
 Cn_q      = getCoefficient(aircraft,"Cn","qcV");
 Cn_r      = getCoefficient(aircraft,"Cn","rb2V");
 
+CY_da     = getCoefficient(aircraft,"CY","Aileron",Component="Aileron");
+CY_dr     = getCoefficient(aircraft,"CY","Rudder",Component="Rudder");
+Cl_da     = getCoefficient(aircraft,"Cl","Aileron",Component="Aileron");
+Cl_dr     = getCoefficient(aircraft,"Cl","Rudder",Component="Rudder");
+Cn_da     = getCoefficient(aircraft,"Cn","Aileron",Component="Aileron");
+Cn_dr     = getCoefficient(aircraft,"Cn","Rudder",Component="Rudder");
+
 % stability and control derivatives
 Y_beta  = Q*S/m*CY_beta;
 Y_p     = Q*S/m/u0*CY_p*(b/2);
 Y_r     = Q*S/m/u0*CY_r*(b/2);
+Y_da    = Q*S/m*Cn_da;
+Y_dr    = Q*S/m*Cn_dr;
 
 L_beta  = Q*S*b/Jx*Cl_beta;
 L_p     = Q*S*b/Jx/u0*Cl_p*(b/2);
 L_r     = Q*S*b/Jx/u0*Cl_r*(b/2);
+L_da    = Q*S*b/Jx*Cl_da;
+L_dr    = Q*S*b/Jx*Cl_dr;
 
 N_beta  = Q*S*b/Jz*Cn_beta;
 N_beta3 = Q*S*b/Jz*Cn_beta*(3*beta_0^2);
 N_p     = Q*S*b/Jz/u0*Cn_p*(b/2);
 N_q     = Q*S*b/Jz/u0*Cn_p*(c);
 N_r     = Q*S*b/Jz/u0*Cn_r*(b/2);
+N_da    = Q*S*b/Jx*Cn_da;
+N_dr    = Q*S*b/Jx*Cn_dr;
 
-% rol-yaw coupling
-Gamma        = 1 - Jxz^2/Jx/Jz;
-L_beta_prime = L_beta/Gamma + Jxz/Jx*N_beta;
-L_p_prime    = L_p/Gamma    + Jxz/Jx*N_p;
-L_r_prime    = L_r/Gamma    + Jxz/Jx*N_r;
-N_beta_prime = N_beta/Gamma + Jxz/Jz*L_beta;
-N_p_prime    = N_p/Gamma    + Jxz/Jz*L_p;
-N_r_prime    = N_r/Gamma    + Jxz/Jz*L_r;
+% roll-yaw coupling
+Coupling        = 1 - Jxz^2/Jx/Jz;
+L_beta_coupling = L_beta/Coupling;
+L_p_coupling    = L_p/Coupling;
+L_r_coupling    = L_r/Coupling;
+L_da_coupling   = L_da/Coupling;
+L_dr_coupling   = L_dr/Coupling;
+
+N_beta_coupling = N_beta/Coupling;
+N_p_coupling    = N_p/Coupling;
+N_r_coupling    = N_r/Coupling;
+N_da_coupling   = N_da/Coupling;
+N_dr_coupling   = N_dr/Coupling;
+
+L_beta_prime = L_beta_coupling + Jxz/Jx*N_beta_coupling;
+L_p_prime    = L_p_coupling    + Jxz/Jx*N_p_coupling;
+L_r_prime    = L_r_coupling    + Jxz/Jx*N_r_coupling;
+L_da_prime   = L_da_coupling   + Jxz/Jx*N_da_coupling;
+L_dr_prime   = L_dr_coupling   + Jxz/Jx*N_dr_coupling;
+
+N_beta_prime = N_beta_coupling + Jxz/Jz*L_beta_coupling;
+N_p_prime    = N_p_coupling    + Jxz/Jz*L_p_coupling;
+N_r_prime    = N_r_coupling    + Jxz/Jz*L_r_coupling;
+N_da_prime   = N_da_coupling   + Jxz/Jz*L_da_coupling;
+N_dr_prime   = N_dr_coupling   + Jxz/Jz*L_dr_coupling;
 
 %% Lateral Dynamics
 % x = [beta; p; r; phi]
-A = [Y_beta/u0 Y_p/u0 -(1-Y_r/u0) g/u0;
-     L_beta_prime L_p_prime L_r_prime 0;
-     N_beta_prime N_p_prime N_r_prime 0;
+A = [Y_beta/u0     Y_p/u0    -(1-Y_r/u0)  g/u0;
+     L_beta_prime  L_p_prime   L_r_prime   0;
+     N_beta_prime  N_p_prime   N_r_prime   0;
      0 1 0 0];
-% B = [Y_da/u0 Y_dr/u0;
-%      L_da L_dr;
-%      N_da N_dr;
-%      0 0];
+B = [Y_da/u0     Y_dr/u0;
+     L_da_prime  L_dr_prime;
+     N_da_prime  N_dr_prime;
+         0           0];
 
 sys = ss(A,[],eye(4),0);
 damp(sys)
@@ -78,6 +108,12 @@ tspan = 0:0.01:50;
 IC = [deg2rad(1);deg2rad(1);deg2rad(1);deg2rad(0)];
 figure(1)
 lsim(sys,[],tspan,IC);
+
+% AA = [A zeros(4,1); 0 0 1 0 0];
+% BB = [B; 0 0];
+% Q = eye(5);
+% R = eye(2);
+% [K,S,P] = lqr(AA,BB,Q,R)
 
 %% Spiral
 % x = [r]
