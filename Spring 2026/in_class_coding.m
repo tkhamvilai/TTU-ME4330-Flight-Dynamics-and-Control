@@ -8,26 +8,73 @@ dt = 0.01; % time step
 tspan = t0:dt:tf; % time span
 
 %% pre-allocation
-x = zeros(length(tspan),1); % a column vector of the size of tspan x 1
+% 3 row represents 3 dimension
+% each column represents time step
+pos = zeros(3,length(tspan));
+vel = zeros(3,length(tspan));
+att = zeros(3,length(tspan));
+rate = zeros(3,length(tspan));
+
+pos_dot = zeros(3,length(tspan));
+vel_dot = zeros(3,length(tspan));
+att_dot = zeros(3,length(tspan));
+rate_dot = zeros(3,length(tspan));
+
+%% some aircraft parameters
+m = 10; % mass, kg
+J = 10*eye(3); % inertia matrix, kg-m^2
+g = [0; 0; 9.81]; % gravity vector in inertial frame, m/s^2
+Forces = [0; 0; 0] .* ones(3,length(tspan)); % force in body frame, N
+Moments = [0; 0; 0] .* ones(3,length(tspan)); % moment in body frame, N-m
 
 %% simulation
 itr = 1;
 for t = tspan
-    x_dot = t^2;
+    x = pos(1,itr);
+    y = pos(2,itr);
+    z = pos(3,itr);
+    u = vel(1,itr);
+    v = vel(2,itr);
+    w = vel(3,itr);
+    phi = att(1,itr); % roll
+    theta = att(2,itr); % pitch
+    psi = att(3,itr); % yaw
+    p = rate(1,itr);
+    q = rate(2,itr);
+    r = rate(3,itr);
+
+    C_phi   = [1     0        0     ;
+               0  cos(phi) sin(phi) ;
+               0 -sin(phi) cos(phi)];
+    C_theta = [cos(theta)  0  -sin(theta) ;
+                   0       1      0       ;
+               sin(theta)  0   cos(theta)];
+    C_psi   = [ cos(psi) sin(psi) 0;
+               -sin(psi) cos(psi) 0;  
+                   0        0     1];
+    C_bI = C_phi * C_theta * C_psi; % rotation matrix from inertia to body
+    C_euler = [1 sin(phi)*tan(theta)  cos(phi)*tan(theta) ;
+               0 cos(phi)            -sin(phi)            ;
+               0 sin(phi)/cos(theta)  cos(phi)/cos(theta)];
+
+    pos_dot(:,itr) = C_bI'*vel(:,itr);
+    vel_dot(:,itr) = -cross(rate(:,itr),vel(:,itr)) + Forces(:,itr)/m + C_bI*g;
+    att_dot(:,itr) = C_euler * rate(:,itr);
+    rate_dot(:,itr) = inv(J)*(Moments(:,itr) - cross(rate(:,itr), J*rate(:,itr)));
+
     if t < tspan(end) % do an integration if we are not at the final time
-        x(itr+1,1) = x(itr,1) + x_dot * dt;
+        pos(:,itr+1) = pos(:,itr)          + pos_dot(:,itr) * dt;
+        vel(:,itr+1) = vel(:,itr)          + vel_dot(:,itr) * dt;
+        att(:,itr+1) = wrapToPi(att(:,itr) + att_dot(:,itr) * dt);
+        rate(:,itr+1) = rate(:,itr)        + rate_dot(:,itr) * dt;
     end
     itr = itr + 1; % increment the iterator
 end
 
-%% analytical solution
-x0 = 0;
-x_analy = x0 + tspan.^3 / 3; % integrate this by hand
-
 %% visualization
-plot(tspan',x,'-r',tspan',x_analy,'--b')
+plot(tspan,pos(1,:),'-r',tspan,pos(2,:),'-g',tspan,pos(3,:),'-b')
 grid on; grid minor
 xlabel('time (s)')
-ylabel('x(t)')
-title('x(t) vs time')
-legend('x(t) numerical','x(t) analytical')
+ylabel('position (m)')
+title('position vs time')
+legend('x','y','z')
