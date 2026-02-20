@@ -3,7 +3,7 @@ clear; clc; close all
 %% time-related parameters
 % integrate numerically x_dot = t^2
 t0 = 0; % initial time
-tf = 50; % final time
+tf = 5; % final time
 dt = 0.01; % time step
 tspan = t0:dt:tf; % time span
 
@@ -44,7 +44,7 @@ for t = tspan
     %     Forces(1,itr) = -5000;
     % end
     % Forces(1,itr) = -vel(1,itr) + 1000 -0*pos(1,itr);
-    Moments(1,itr) = sin(t)*tan(t)*t^3; %deg2rad(10) + att(1,itr) -rate(1,itr);
+    Moments(1,itr) = deg2rad(70) -att(1,itr) -rate(1,itr);
 
     x = pos(1,itr);
     y = pos(2,itr);
@@ -136,3 +136,17 @@ xlabel('time (s)')
 ylabel('Moments (N-m)')
 title('Moments vs time')
 legend('L','M','N')
+
+%% 3D trajectory
+figure()
+trajectory_plot(pos, att, 300, 250, 'gripen')
+
+%% Animation
+h = Aero.Animation;
+h.createBody('pa24-250_orange.ac','Ac3d'); % model name, file extension
+h.Bodies{1}.TimeSeriesSource = [tspan' pos' att'];
+
+h.Camera.PositionFcn = @cameraChaser;
+h.initialize();
+h.show();
+h.play();
