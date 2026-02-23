@@ -42,3 +42,96 @@ verticalStabilizer = Aero.FixedWing.Surface(1, "Surfaces", rudder, ...
 propeller = Aero.FixedWing.Thrust(1, "Properties", Aero.Aircraft.Properties(1, "Name", "Propeller"), ...
     "Coefficients", Aero.FixedWing.Coefficient("StateVariables", "Propeller", ...
     "ReferenceFrame", "Body", "MultiplyStateVariables", "off", "NonDimensional", false));
+
+name = Aero.Aircraft.Properties(1, "Name", "Dehavilland_Beaver", "Type", "General Aviation", "Version", "1.0", "Description", "Dehavilland Beaver Demo");
+
+aircraft = Aero.FixedWing(1, "Properties", name, ...
+    "ReferenceArea", 23.23, ... % S: wing surface area
+    "ReferenceSpan", 14.63, ... % b: wingspan
+    "ReferenceLength", 1.5875, ... % c_bar: chord length
+    "Surfaces",[wing, horizontalStabilizer, verticalStabilizer], ...
+    "Thrusts", propeller);
+
+% aerodynamic coefficients
+aircraft.Coefficients.ReferenceFrame = "Body";
+% MATLAB gives us some baseline variables, e.g., Zero, U, Alpha, AlphaDot, etc.
+% We can still add more variables if we think of airplane aerodynamic
+% characteristics depend on those variables
+aircraft.Coefficients.StateVariables = [aircraft.Coefficients.StateVariables ...
+    "Alpha2", "Alpha3", "Beta2", "Beta3", "qcV", "pb2V", "rb2V"];
+
+% These values are specific for the Dehavilland Beaver aircraft
+BodyCoefficients = {
+    % rolling moment coefficients
+    'Cl', 'Zero', 0;
+    'Cl', 'Beta', -0.0618;
+    'Cl', 'pb2V', -0.5045;
+    'Cl', 'rb2V', 0.1695;
+    % pitching moment coefficients
+    'Cm', 'Zero', 0.0945;
+    'Cm', 'Alpha', -0.6028;
+    'Cm', 'Alpha2', 0;
+    'Cm', 'Beta2', 0;
+    'Cm', 'qcV', 0;
+    'Cm', 'rb2V', -0.3118
+    % yawing moment
+    'Cn', 'Zero', 0;
+    'Cn', 'Beta', 0.0067;
+    'Cn', 'Beta3', 0;
+    'Cn', 'pb2V', -0.1585;
+    'Cn', 'qcV', 0;
+    'Cn', 'rb2V', -0.1112;
+    % force in x direction (forward force)
+    'CX', 'Zero', -0.0355;
+    'CX', 'Alpha', 0.0029;
+    'CX', 'Alpha2', 0;
+    'CX', 'Alpha3', 0;
+    'CX', 'qcV', -0.6748;
+    % force in y direction (side force)
+    'CY', 'Zero', 0;
+    'CY', 'Beta', -0.7676;
+    'CY', 'pb2V', -0.1240;
+    'CY', 'rb2V', 0.3666;
+    % force in z direction (downward force)
+    'CZ', 'Zero', -0.055;
+    'CZ', 'Alpha', -5.578;
+    'CZ', 'Alpha3', 0;
+    'CZ', 'qcV', -2.988;
+};
+
+ElevatorCoefficients = {
+    'CZ', 'Elevator', -0.3980;
+    'CZ', 'ElevatorBeta2', 0;%-15.9300;
+    'Cm', 'Elevator', -1.9210;
+    };
+
+AileronCoefficients = {
+    'Cl', 'Aileron', -0.0992;
+    'Cl', 'AileronAlpha', 0;%-0.0827;
+    'Cn', 'Aileron', -0.0039;
+    'CY', 'Aileron', -0.0296;
+    };
+
+RudderCoefficients = {
+    'CX', 'Rudder', 0;%0.0341;
+    'Cn', 'Rudder', -0.0827;
+    'Cl', 'Rudder', 0.0069;
+    'CY', 'RudderAlpha', 0;%0.5238;
+    'CY', 'Rudder', 0.1158;
+    };
+
+% thrust curve (this needs to be an increasing function of a throttle setting)
+Thrust = 5000;
+prop = Simulink.LookupTable;
+prop.Table.Value = Thrust*(1+tanh(-3:3));
+prop.Breakpoints(1).Value = (1/6)*(3+(-3:3));
+prop.Breakpoints(1).FieldName = "Propeller";
+PropellerCoefficients = {'CX', 'Propeller', prop};
+
+aircraft = setCoefficient(aircraft, BodyCoefficients(:,1), BodyCoefficients(:,2), BodyCoefficients(:,3));
+aircraft = setCoefficient(aircraft, AileronCoefficients(:,1), AileronCoefficients(:,2), AileronCoefficients(:,3), "Component", "Aileron");
+aircraft = setCoefficient(aircraft, ElevatorCoefficients(:,1), ElevatorCoefficients(:,2), ElevatorCoefficients(:,3), "Component", "Elevator");
+aircraft = setCoefficient(aircraft, RudderCoefficients(:,1), RudderCoefficients(:,2), RudderCoefficients(:,3), "Component", "Rudder");
+aircraft = setCoefficient(aircraft, PropellerCoefficients(:,1), PropellerCoefficients(:,2), PropellerCoefficients(:,3), "Component", "Propeller");
+aircraft = aircraft.update();
+thrustX = getCoefficient(aircraft, "CX", "Propeller", Component = "Propeller");
