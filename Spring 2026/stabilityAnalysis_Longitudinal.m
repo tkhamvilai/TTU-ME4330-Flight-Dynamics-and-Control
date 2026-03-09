@@ -43,7 +43,7 @@ Cm_de     = getCoefficient(aircraft,"Cm","Elevator",Component="Elevator");
 
 % stability and control derivatives
 X_u       = Q*S/m/u0*CX_0*(2);
-X_alpha   = Q*S/m*CX_alpha;
+X_alpha   = Q*S/m*(CX_alpha - CZ_0*0);
 X_alpha2  = Q*S/m*CX_alpha2*(2*alpha_0);
 X_alpha3  = Q*S/m*CX_alpha3*(3*alpha_0^2);
 X_q       = Q*S/m/u0*CX_q*c;
@@ -51,7 +51,7 @@ X_dt      = Q*S/m*CX_dt;
 X_de      = 0;
 
 Z_u       = Q*S/m/u0*CZ_0*(2);
-Z_alpha   = Q*S/m*CZ_alpha;
+Z_alpha   = Q*S/m*(CZ_alpha + CX_0*0);
 Z_alpha3  = Q*S/m*CZ_alpha3*(3*alpha_0^2);
 Z_q       = Q*S/m/u0*CZ_q*c;
 Z_dt      = 0;
@@ -78,21 +78,27 @@ B = [X_de     X_dt;
      M_de     M_dt;
      0         0];
 sys = ss(A,[],eye(4),0);
+disp('Longitudinal Dynamics')
 damp(sys)
+disp(' ')
 
 tspan = 0:0.01:250;
 IC = [u0;0;deg2rad(1);deg2rad(0)];
 figure(1)
 lsim(sys,[],tspan,IC);
+title('Longitudinal Dynamics')
 
 %% Phugoid / Long-Period Mode
 % x = [u; theta]
 A_pg = [X_u -g; -Z_u/u0 0];
 sys_pg = ss(A_pg,[],eye(2),0);
+disp('Phugoid / Long-Period Mode')
 damp(sys_pg)
+disp(' ')
 IC_pg = [u0;deg2rad(0)];
 figure(2)
 lsim(sys_pg,[],tspan,IC_pg);
+title('Phugoid / Long-Period Mode')
 omega_pg = sqrt(-Z_u*g/u0);
 damp_pg = -X_u/2/omega_pg;
 
@@ -100,9 +106,12 @@ damp_pg = -X_u/2/omega_pg;
 % x = [alpha; q]
 A_sp = [Z_alpha/u0 1; M_alpha M_q];
 sys_sp = ss(A_sp,[],eye(2),0);
+disp('Short-Period Mode')
 damp(sys_sp)
+disp(' ')
 IC_sp = [0;deg2rad(1)];
 figure(3)
 lsim(sys_sp,[],tspan,IC_sp);
+title('Short-Period Mode')
 omega_sp = sqrt(-Z_alpha*M_q/u0 - M_alpha);
 damp_sp = -(M_q + Z_alpha/u0)/(2*omega_sp);

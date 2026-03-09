@@ -129,7 +129,10 @@ aircraft = aircraft.update(); % update cofficients to the new assigned values
 thrustX = getCoefficient(aircraft,"CX","Propeller",Component="Propeller");
 
 AltitudeMSL = 2202; % operation height
-Environment = aircraftEnvironment(aircraft,"COESA",AltitudeMSL); % rho, P, T, a
+
+% rho (air density), P (air pressure), T (air temep), a (speed of sound)
+Environment = aircraftEnvironment(aircraft,"COESA",AltitudeMSL);
+
 
 state = fixedWingState(aircraft, Environment);
 state.Mass              = 2288.231; % mass [kg]

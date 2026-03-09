@@ -86,7 +86,7 @@ BodyCoefficients = {
     'CX', 'Alpha', 0.0029;
     'CX', 'Alpha2', 0;
     'CX', 'Alpha3', 0;
-    'CX', 'qCV', -0.6748;
+    'CX', 'qcV', -0.6748;
     % force in y direction (side force)
     'CY', 'Zero', 0;
     'CY', 'Beta', -0.7676;
@@ -128,4 +128,51 @@ prop.Breakpoints(1).Value = (1/6)*(3+(-3:3));
 prop.Breakpoints(1).FieldName = "Propeller";
 PropellerCoefficients = {'CX', 'Propeller', prop};
 
-aircraft = setCoefficient(aircraft, BodyCoefficients(:,1), )
+aircraft = setCoefficient(aircraft, BodyCoefficients(:,1), BodyCoefficients(:,2), BodyCoefficients(:,3));
+aircraft = setCoefficient(aircraft, AileronCoefficients(:,1), AileronCoefficients(:,2), AileronCoefficients(:,3), "Component", "Aileron");
+aircraft = setCoefficient(aircraft, ElevatorCoefficients(:,1), ElevatorCoefficients(:,2), ElevatorCoefficients(:,3), "Component", "Elevator");
+aircraft = setCoefficient(aircraft, RudderCoefficients(:,1), RudderCoefficients(:,2), RudderCoefficients(:,3), "Component", "Rudder");
+aircraft = setCoefficient(aircraft, PropellerCoefficients(:,1), PropellerCoefficients(:,2), PropellerCoefficients(:,3), "Component", "Propeller");
+aircraft = aircraft.update();
+thrustX = getCoefficient(aircraft, "CX", "Propeller", Component = "Propeller");
+
+AltitudeMSL = 2202; % operation height
+
+% rho (air density), P (air pressure), T (air temperature), a (speed of sound)
+Environment = aircraftEnvironment(aircraft,"COESA",AltitudeMSL);
+
+state = fixedWingState(aircraft, Environment);
+state.Mass              = 2288.231; % mass [kg]
+state.Inertia.Variables = [ 5788.0     0.0  -117.6; 
+                               0.0  6928.9     0.0;
+                            -117.6     0.0 11578.3]; % Moment of Inertia [kg*m^2]
+state.CenterOfGravity  = [0 0 0];     % Center of Gravity [m]
+state.CenterOfPressure = [0 0 0];     % Center of Pressure [m]
+
+% set initial condition (pick one)
+% [state, control] = spiralInitialCondition(state, AltitudeMSL);
+[state, control] = doNothingInitialCondition(state, AltitudeMSL);
+% [state, control] = trimCouplingInitialCondition(state, AltitudeMSL);
+disp('Aircraft Created')
+
+%% 
+function [state_out, control] = doNothingInitialCondition(state_in, AltitudeMSL)
+    state_out = state_in;
+    state_out.XN    = 0;                        % Initial x position [m]
+    state_out.XE    = 0;                        % Initial y position [m]
+    state_out.XD    = -AltitudeMSL;             % Initial z position [m]
+    state_out.U     = 40;                       % Initial x velocity [m/s]
+    state_out.V     = 0;                        % Initial y velocity [m/s]
+    state_out.W     = 0;                        % Initial z velocity [m/s]
+    state_out.Phi   = 0;                        % Initial x angular position [rad]
+    state_out.Theta = 0;                        % Initial y angular position [rad]
+    state_out.Psi   = 0;                        % Initial z angular position [rad]
+    state_out.P     = 0.0;                      % Initial x angular velocity [rad/s]
+    state_out.Q     = 0.0;                      % Initial y angular velocity [rad/s]
+    state_out.R     = 0.0;                      % Initial z angular velocity [rad/s]
+
+    control.Throttle  = 0.5;                    % Initial Throttle Setting [0-1]
+    control.Aileron   = 0.0;                    % Initial Aileron Deflection [rad]
+    control.Elevator  = 0.0;                    % Initial Elevator Deflection [rad]
+    control.Rudder    = 0.0;                    % Initial Rudder Deflection [rad]
+end

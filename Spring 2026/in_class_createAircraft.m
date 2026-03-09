@@ -135,3 +135,86 @@ aircraft = setCoefficient(aircraft, RudderCoefficients(:,1), RudderCoefficients(
 aircraft = setCoefficient(aircraft, PropellerCoefficients(:,1), PropellerCoefficients(:,2), PropellerCoefficients(:,3), "Component", "Propeller");
 aircraft = aircraft.update();
 thrustX = getCoefficient(aircraft, "CX", "Propeller", Component = "Propeller");
+
+AltitudeMSL = 2202; % operation height
+
+% rho (air density), P (air pressure), T (air temperature), a (speed of sound)
+Environment = aircraftEnvironment(aircraft,"COESA",AltitudeMSL);
+
+state = fixedWingState(aircraft, Environment);
+state.Mass              = 2288.231; % mass [kg]
+state.Inertia.Variables = [ 5788.0     0.0  -117.6; 
+                               0.0  6928.9     0.0;
+                            -117.6     0.0 11578.3]; % Moment of Inertia [kg*m^2]
+state.CenterOfGravity  = [0 0 0];     % Center of Gravity [m]
+state.CenterOfPressure = [0 0 0];     % Center of Pressure [m]
+
+% set initial condition (pick one)
+% [state, control] = spiralInitialCondition(state, AltitudeMSL);
+[state, control] = doNothingInitialCondition(state, AltitudeMSL);
+% [state, control] = trimCouplingInitialCondition(state, AltitudeMSL);
+disp('Aircraft Created')
+
+%% Initial Condition
+function [state_out, control] = doNothingInitialCondition(state_in, AltitudeMSL)
+    state_out = state_in;
+    state_out.XN    = 0;                        % Initial x position [m]
+    state_out.XE    = 0;                        % Initial y position [m]
+    state_out.XD    = -AltitudeMSL;             % Initial z position [m]
+    state_out.U     = 40;                       % Initial x velocity [m/s]
+    state_out.V     = 0;                        % Initial y velocity [m/s]
+    state_out.W     = 0;                        % Initial z velocity [m/s]
+    state_out.Phi   = 0;                        % Initial x angular position [rad]
+    state_out.Theta = 0;                        % Initial y angular position [rad]
+    state_out.Psi   = 0;                        % Initial z angular position [rad]
+    state_out.P     = 0.0;                      % Initial x angular velocity [rad/s]
+    state_out.Q     = 0.0;                      % Initial y angular velocity [rad/s]
+    state_out.R     = 0.0;                      % Initial z angular velocity [rad/s]
+
+    control.Throttle  = 0.5;                    % Initial Throttle Setting [0-1]
+    control.Aileron   = 0.0;                    % Initial Aileron Deflection [rad]
+    control.Elevator  = 0.0;                    % Initial Elevator Deflection [rad]
+    control.Rudder    = 0.0;                    % Initial Rudder Deflection [rad]
+end
+
+function [state_out, control] = spiralInitialCondition(state_in, AltitudeMSL)
+    state_out = state_in;
+    state_out.XN    = 0;            % Initial x position [m]
+    state_out.XE    = 0;            % Initial y position [m]
+    state_out.XD    = -AltitudeMSL; % Initial z position [m]
+    state_out.U     = 44.54;        % Initial x velocity [m/s]
+    state_out.V     = 2.714;        % Initial y velocity [m/s]
+    state_out.W     = 5.836;        % Initial z velocity [m/s]
+    state_out.Phi   = 0.0;          % Initial x angular position [rad]
+    state_out.Theta = 0.1309;       % Initial y angular position [rad]
+    state_out.Psi   = 0.0;          % Initial z angular position [rad]
+    state_out.P     = 0.0;          % Initial x angular velocity [rad/s]
+    state_out.Q     = 0.0;          % Initial y angular velocity [rad/s]
+    state_out.R     = 0.0;          % Initial z angular velocity [rad/s]
+
+    control.Throttle  = 0.5; % Initial Throttle Setting [0-1]
+    control.Aileron   = 0.1; % Initial Aileron Deflection [rad]
+    control.Elevator  = -0.1; % Initial Elevator Deflection [rad]
+    control.Rudder    = 0.0; % Initial Rudder Deflection [rad]
+end
+
+% function [state_out, control] = trimCouplingInitialCondition(state_in, AltitudeMSL)
+%     state_out = state_in;
+%     state_out.XN    = 0;                        % Initial x position [m]
+%     state_out.XE    = 0;                        % Initial y position [m]
+%     state_out.XD    = -AltitudeMSL;             % Initial z position [m]
+%     state_out.U     = 36.911969266574350;       % Initial x velocity [m/s]
+%     state_out.V     = 8.107208632644118;        % Initial y velocity [m/s]
+%     state_out.W     = 8.825918825964060;        % Initial z velocity [m/s]
+%     state_out.Phi   = 0.128665353088755;        % Initial x angular position [rad]
+%     state_out.Theta = 0.259337659945870;        % Initial y angular position [rad]
+%     state_out.Psi   = -0.178947917154394;       % Initial z angular position [rad]
+%     state_out.P     = 0.0;                      % Initial x angular velocity [rad/s]
+%     state_out.Q     = 0.0;                      % Initial y angular velocity [rad/s]
+%     state_out.R     = 0.0;                      % Initial z angular velocity [rad/s]
+% 
+%     control.Throttle  = 0.5;                    % Initial Throttle Setting [0-1]
+%     control.Aileron   = -0.104711430293605;     % Initial Aileron Deflection [rad]
+%     control.Elevator  = -0.069872522954441;     % Initial Elevator Deflection [rad]
+%     control.Rudder    = 0;%-2.150423302540860e-04; % Initial Rudder Deflection [rad]
+% end
