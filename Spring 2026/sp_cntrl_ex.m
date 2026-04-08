@@ -2,7 +2,7 @@ clear; clc; close all
 %% Simulation time
 t0 = 0;
 Tf = 10;
-dt = 0.01;
+dt = 0.001;
 T = t0:dt:Tf;
 
 %% short-period dynamics
@@ -10,32 +10,81 @@ A_sp = [ -1.9546    1.0000;
          -7.7519         0];
 B_sp = [-0.1395;
         -24.7036];
+C_sp = eye(2);
 
 A = [-1.9546    1.0000 -0.1395;
      -7.7519         0 -24.7036;
-           0         0 -10];
+           0         0 -20];
+B = [0; 0; -1];
+C = eye(3);
+D = 0;
 
-% x = zeros(2,length(T)); % alpha; q
-% x(:,1) = [0; 2];
+x = zeros(2,length(T)); % alpha; q
+de = zeros(1,length(T)); % elevator deflection
+u = zeros(1,length(T)); % control command
+x(:,1) = [0; 2];
 
-x = zeros(3,length(T)); % alpha; q
-x(:,1) = [0; 2; 0];
+xx = zeros(3,length(T)); % alpha; q
+xx(:,1) = [0; 2; 0];
+uu = zeros(1,length(T)); % control command
 
 %% Simulation run
+% control design
+alpha_desired = 3*pi/180;
+q_desired = 1*pi/180;
+K_alpha = 1;
+K_q = 0;
+control = @(alpha, q) K_alpha*(alpha_desired - alpha) + K_q*(q_desired - q);
+
+% without actuator dynamics
 for i = 1:length(T)
     alpha = x(1,i);
     q = x(2,i);
-    de = q;
-    u = q;
-    % x_dot = A_sp * x(:,i) + B_sp*de;
-    x_dot = A * x(:,i) + [0;0;1]*u;
+    u(i) = control(alpha, q);
+    de(i) = -u(i);
+    de(i) = clip(de(i), -10*pi/180, 10*pi/180);
+    x_dot = A_sp * x(:,i) + B_sp*de(i);
     x(:,i+1) = x(:,i) + x_dot * dt;
 end
 
+% with actuator dynamics
+for i = 1:length(T)
+    alpha = xx(1,i);
+    q = xx(2,i);
+    uu(i) = control(alpha, q);
+    xx_dot = A * xx(:,i) + B * uu(i);
+    xx(:,i+1) = xx(:,i) + xx_dot * dt;
+end
+
 %% plot
-plot(T, x(1,1:length(T)), '-r'); hold on
-plot(T, x(2,1:length(T)), '-b');
-legend('angle of attack \alpha','pitch rate q');
+subplot(2,2,1)
+plot(T, x(1,1:length(T))*180/pi, '-r'); hold on
+plot(T, xx(1,1:length(T))*180/pi, '-b');
+legend('\alpha without actuator dynamics', '\alpha with actuator dynamics');
 xlabel('time (s)');
-ylabel('states');
+ylabel('angle of attack (\alpha), deg');
+grid on; grid minor
+
+subplot(2,2,2)
+plot(T, x(2,1:length(T))*180/pi, '-r'); hold on
+plot(T, xx(2,1:length(T))*180/pi, '-b');
+legend('q without actuator dynamics', 'q with actuator dynamics');
+xlabel('time (s)');
+ylabel('pitch rate (q), deg/s');
+grid on; grid minor
+
+subplot(2,2,3)
+plot(T, de(1,1:length(T))*180/pi, '-r'); hold on
+plot(T, xx(3,1:length(T))*180/pi, '-b');
+legend('\delta_e without actuator dynamics', '\delta_e with actuator dynamics');
+xlabel('time (s)');
+ylabel('elevator deflection (\delta_e), deg');
+grid on; grid minor
+
+subplot(2,2,4)
+plot(T, u(1,1:length(T))*180/pi, '-r'); hold on
+plot(T, uu(1,1:length(T))*180/pi, '-b');
+legend('u without actuator dynamics', 'u with actuator dynamics');
+xlabel('time (s)');
+ylabel('control command (u), deg');
 grid on; grid minor
