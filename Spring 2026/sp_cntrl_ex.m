@@ -11,15 +11,24 @@ A_sp = [ -1.9546    1.0000;
 B_sp = [-0.1395;
         -24.7036];
 
-x = zeros(2,length(T)); % alpha; q
-x(:,1) = [0; 2];
+A = [-1.9546    1.0000 -0.1395;
+     -7.7519         0 -24.7036;
+           0         0 -10];
+
+% x = zeros(2,length(T)); % alpha; q
+% x(:,1) = [0; 2];
+
+x = zeros(3,length(T)); % alpha; q
+x(:,1) = [0; 2; 0];
 
 %% Simulation run
 for i = 1:length(T)
     alpha = x(1,i);
     q = x(2,i);
     de = q;
-    x_dot = A_sp * x(:,i) + B_sp*de;
+    u = q;
+    % x_dot = A_sp * x(:,i) + B_sp*de;
+    x_dot = A * x(:,i) + [0;0;1]*u;
     x(:,i+1) = x(:,i) + x_dot * dt;
 end
 
