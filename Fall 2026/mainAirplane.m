@@ -71,6 +71,10 @@ params.act.aileronMax  = deg2rad(30);
 params.act.elevatorMax = deg2rad(30);
 params.act.rudderMax   = deg2rad(60);
 
+% ------------------------------ Operating Condition ----------------------------------
+trimSpeed = 55; % trimSpeed, m/s
+AltitudeMSL = 2202; % operating height, m
+
 % -------------------------------- Autopilot --------------------------------------
 %   'manual'      pilot trim straight through, no feedback
 %   'rateSAS'     rate stability augmentation about the trim condition
@@ -82,25 +86,25 @@ params.act.rudderMax   = deg2rad(60);
 %   'cruise'      altitude hold and velocity hold together
 params.ctrl.mode = 'manual';
 
-% manual control
+% 'manual', manual control
 params.pilot.aileron  = 0;
 params.pilot.elevator = 0;
 params.pilot.rudder   = 0;
 params.pilot.throttle = 0.5;
 
-% stability augmentation system
+% 'rateSAS', stability augmentation system
 params.ctrl.rateSAS.Kp = 1; % roll rate
 params.ctrl.rateSAS.Kq = 5; % pitch rate
 params.ctrl.rateSAS.Kr = 1; % yaw rate
 
-% climbing
+% 'pitchCAS', climbing
 params.ctrl.pitchCAS.theta_ref = deg2rad(20);
 params.ctrl.pitchCAS.Kp = 1;
 params.ctrl.pitchCAS.Ki = 0.01;
 params.ctrl.pitchCAS.Kd = 1;
 params.ctrl.pitchCAS.throttle = 1; % full throttle for the climb
 
-% climbing and leveling out
+% 'altitude', climbing and leveling out
 params.ctrl.altitude.h_ref = 3000; % m
 params.ctrl.altitude.Kp_h = 0.01; % altitude error to pitch command
 params.ctrl.altitude.Kd_h = 0.01; % climb rate damping
@@ -110,21 +114,21 @@ params.ctrl.altitude.Ki = 0.01;
 params.ctrl.altitude.Kd = 2;
 params.ctrl.altitude.Kt = 0.1; % altitude error to throttle
 
-% emergency descending
+% 'rollYawSAS', emergency descending
 params.ctrl.rollYawSAS.phi_ref = deg2rad(30);
 params.ctrl.rollYawSAS.p_ref = 0;
-params.ctrl.rollYawSAS.r_ref = deg2rad(1);
+params.ctrl.rollYawSAS.r_ref = params.env.g*sin(params.ctrl.rollYawSAS.phi_ref)/trimSpeed;
 params.ctrl.rollYawSAS.Kpp = 1;
 params.ctrl.rollYawSAS.Kpd = 1;
 params.ctrl.rollYawSAS.Kr = 1;
 
-% forward-slip landing
+% 'bankHeading', forward-slip landing
 params.ctrl.bankHeading.phi_ref = deg2rad(30);
 params.ctrl.bankHeading.psi_ref = deg2rad(10);
 params.ctrl.bankHeading.K = [-0.0169  -0.5896  -0.0929  -1.0566  -0.2280;   % aileron row
                               0.3838   0.0128  -1.1973  -0.2366  -0.9737];  % rudder row
 
-% gliding
+% 'velocity', gliding
 params.ctrl.velocity.u_ref = 55; % m/s
 params.ctrl.velocity.Kp_u = 2;
 params.ctrl.velocity.Ki_u = 1;
@@ -134,7 +138,7 @@ params.ctrl.velocity.Kp = 1;
 params.ctrl.velocity.Ki = 0.01;
 params.ctrl.velocity.Kd = 1;
 
-% cruising
+% 'cruise', maintain forward velocity and altitude
 params.ctrl.cruise.h_ref = 3000; % m
 params.ctrl.cruise.u_ref = 55; % m/s
 params.ctrl.cruise.Kp_u = 2;
@@ -159,9 +163,6 @@ N_states = 12; % the number of states
 initialCondition = 'doNothing';
 % initialCondition = 'trimmed';
 % initialCondition = 'spiral';
-
-trimSpeed = 55; % trimSpeed, m/s
-AltitudeMSL = 2202; % operating height, m
 
 [x0, params.pilot] = initialState(initialCondition, AltitudeMSL, trimSpeed, params);
 
