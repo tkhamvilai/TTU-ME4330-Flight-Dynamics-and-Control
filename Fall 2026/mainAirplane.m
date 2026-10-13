@@ -148,7 +148,7 @@ params.ctrl.cruise.Kd = 2;
 params.ctrl.iLimit_theta = 1; % clamp on the pitch integrator, shared by every mode
 
 %% Sim Variables
-dt = 0.02; % time step, s
+dt = 0.01; % time step, s
 Tf = 200; % time horizon, s
 tspan = 0:dt:Tf;
 N_states = 12; % the number of states
