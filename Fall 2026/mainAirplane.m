@@ -153,13 +153,13 @@ Tf = 200; % time horizon, s
 tspan = 0:dt:Tf;
 N_states = 12; % the number of states
 
-AltitudeMSL = 2202; % operating height, m
-
-% Initial condition (pick one). 'trimmed' solves for straight and level flight at the
-% speed below; the other three are the conditions defined in flightSim_createAircraft.m.
+% Initial condition (pick one). 'trimmed' solves for straight and level flight at the trimSpeed and altitude
 % initialCondition = 'doNothing';
 initialCondition = 'trimmed';
-trimSpeed = 55; % m/s, used by 'trimmed' only
+% initialCondition = 'spiral';
+
+trimSpeed = 55; % trimSpeed, m/s
+AltitudeMSL = 2202; % operating height, m
 
 [x0, params.pilot] = initialState(initialCondition, AltitudeMSL, trimSpeed, params);
 
@@ -183,159 +183,158 @@ if strcmp(initialCondition, 'trimmed')
     B_lateral_numerical = B_numerical(lateral_states, lateral_control);
 
 % ------------------------------ Stability Derivatives ---------------------------
-QS = 0.5*params.env.rho*trimSpeed^2*params.geom.S;
-Jx = params.body.J(1,1);
-Jy = params.body.J(2,2);
-Jz = params.body.J(3,3);
-Jxz = params.body.J(1,3);
-
-% Longitudinal
-X_u   = QS/params.body.m/trimSpeed*params.aero.CX_0*(2);
-X_a   = QS/params.body.m*(params.aero.CX_a - params.aero.CZ_0*0);
-X_q   = QS/params.body.m*params.aero.CX_q*params.geom.c/2/trimSpeed;
-X_dt  = QS/params.body.m*params.aero.CX_dt;
-X_de  = QS/params.body.m*params.aero.CX_de;
-
-Z_u   = QS/params.body.m/trimSpeed*params.aero.CZ_0*(2);
-Z_a   = QS/params.body.m*(params.aero.CZ_a + params.aero.CX_0*0);
-Z_q   = QS/params.body.m*params.aero.CZ_q*params.geom.c/2/trimSpeed;
-Z_dt  = QS/params.body.m*params.aero.CZ_dt;
-Z_de  = QS/params.body.m*params.aero.CZ_de;
-
-M_u   = QS*params.geom.c/Jy/trimSpeed*params.aero.Cm_0*(2);
-M_a   = QS*params.geom.c/Jy*params.aero.Cm_a;
-M_q   = QS*params.geom.c/Jy/trimSpeed*params.aero.Cm_q*params.geom.c;
-M_dt  = QS/params.geom.c/Jy*params.aero.Cm_dt;
-M_de  = QS*params.geom.c/Jy*params.aero.Cm_de;
-
-% x = [u; alpha; q; theta]
-A_longitudinal_analytical = [X_u           X_a            0 -params.env.g;
-                             Z_u/trimSpeed Z_a/trimSpeed  1  0;
-                             M_u           M_a           M_q 0;
-                              0             0             1  0];
-B_longitudinal_analytical = [X_de            X_dt;
-                             Z_de/trimSpeed  Z_dt/trimSpeed;
-                             M_de            M_dt;
-                             0                0];
-disp('Longitudinal Stability'); damp(A_longitudinal_analytical)
-tspan_stability = 0:0.1:250;
-perturbation = [0.01*trimSpeed;0;deg2rad(1);deg2rad(0)];
-figure;
-lsim(ss(A_longitudinal_analytical,[],eye(4),0),[],tspan_stability,perturbation);
-title('Longitudinal Dynamics')
-
-% Phugoid / Long-Period Mode
-% x = [u; theta]
-A_pg = [X_u -params.env.g; -Z_u/trimSpeed 0];
-disp('Phugoid / Long-Period Mode Stability'); damp(A_pg)
-tspan_stability = 0:0.1:250;
-perturbation = [0.01*trimSpeed;deg2rad(0)];
-figure;
-lsim(ss(A_pg,[],eye(2),0),[],tspan_stability,perturbation);
-title('Phugoid / Long-Period Mode Dynamics')
-
-% Short-Period Mode
-% x = [alpha; q]
-A_sp = [Z_a/trimSpeed 1; M_a M_q];
-disp('Short-Period Mode Stability'); damp(A_sp)
-tspan_stability = 0:0.1:25;
-perturbation = [0;deg2rad(1)];
-figure;
-lsim(ss(A_sp,[],eye(2),0),[],tspan_stability,perturbation);
-title('Short-Period Mode Dynamics')
-
-% Lateral Dynamics
-Y_b  = QS/params.body.m*params.aero.CY_b;
-Y_p  = QS/params.body.m/trimSpeed*params.aero.CY_p*(params.geom.b/2);
-Y_r  = QS/params.body.m/trimSpeed*params.aero.CY_r*(params.geom.b/2);
-Y_da = QS/params.body.m*params.aero.Cn_da;
-Y_dr = QS/params.body.m*params.aero.Cn_dr;
-
-L_b  = QS*params.geom.b/Jx*params.aero.Cl_b;
-L_p  = QS*params.geom.b/Jx/trimSpeed*params.aero.Cl_p*(params.geom.b/2);
-L_r  = QS*params.geom.b/Jx/trimSpeed*params.aero.Cl_r*(params.geom.b/2);
-L_da = QS*params.geom.b/Jx*params.aero.Cl_da;
-L_dr = QS*params.geom.b/Jx*params.aero.Cl_dr;
-
-N_b  = QS*params.geom.b/Jz*params.aero.Cn_b;
-N_p  = QS*params.geom.b/Jz/trimSpeed*params.aero.Cn_p*(params.geom.b/2);
-N_r  = QS*params.geom.b/Jz/trimSpeed*params.aero.Cn_r*(params.geom.b/2);
-N_da = QS*params.geom.b/Jx*params.aero.Cn_da;
-N_dr = QS*params.geom.b/Jx*params.aero.Cn_dr;
-
-% roll-yaw coupling
-Coupling      = 1 - Jxz^2/Jx/Jz;
-L_b_coupling  = L_b/Coupling;
-L_p_coupling  = L_p/Coupling;
-L_r_coupling  = L_r/Coupling;
-L_da_coupling = L_da/Coupling;
-L_dr_coupling = L_dr/Coupling;
-
-N_b_coupling  = N_b/Coupling;
-N_p_coupling  = N_p/Coupling;
-N_r_coupling  = N_r/Coupling;
-N_da_coupling = N_da/Coupling;
-N_dr_coupling = N_dr/Coupling;
-
-L_b_prime  = L_b_coupling  + Jxz/Jx*N_b_coupling;
-L_p_prime  = L_p_coupling  + Jxz/Jx*N_p_coupling;
-L_r_prime  = L_r_coupling  + Jxz/Jx*N_r_coupling;
-L_da_prime = L_da_coupling + Jxz/Jx*N_da_coupling;
-L_dr_prime = L_dr_coupling + Jxz/Jx*N_dr_coupling;
-
-N_b_prime  = N_b_coupling  + Jxz/Jz*L_b_coupling;
-N_p_prime  = N_p_coupling  + Jxz/Jz*L_p_coupling;
-N_r_prime  = N_r_coupling  + Jxz/Jz*L_r_coupling;
-N_da_prime = N_da_coupling + Jxz/Jz*L_da_coupling;
-N_dr_prime = N_dr_coupling + Jxz/Jz*L_dr_coupling;
-
-% x = [beta; p; r; phi]
-A_lateral_analytical = [Y_b/trimSpeed     Y_p/trimSpeed    -(1-Y_r/trimSpeed)  params.env.g/trimSpeed;
-                        L_b_prime         L_p_prime          L_r_prime         0;
-                        N_b_prime         N_p_prime          N_r_prime         0;
-                        0 1 0 0];
-B_lateral_analytical = [Y_da/trimSpeed     Y_dr/trimSpeed;
-                        L_da_prime         L_dr_prime;
-                        N_da_prime         N_dr_prime;
-                            0                  0];
-disp('Lateral Stability'); damp(A_lateral_analytical)
-tspan_stability = 0:0.1:250;
-perturbation = [deg2rad(1);deg2rad(1);deg2rad(1);deg2rad(0)];
-figure;
-lsim(ss(A_lateral_analytical,[],eye(4),0),[],tspan_stability,perturbation);
-title('Lateral Dynamics')
-
-% Spiral
-% x = [r]
-A_spi = N_r_prime - L_r_prime*N_b_prime/L_b_prime;
-disp('Spiral Stability'); damp(A_spi)
-tspan_stability = 0:0.1:25;
-perturbation = deg2rad(1);
-figure;
-lsim(ss(A_spi,[],eye(1),0),[],tspan_stability,perturbation);
-title('Spiral Mode Dynamics')
-
-% Roll
-% x = [p]
-A_roll = L_p_prime;
-disp('Roll Mode Stability'); damp(A_roll)
-tspan_stability = 0:0.1:25;
-perturbation = deg2rad(1);
-figure;
-lsim(ss(A_roll,[],eye(1),0),[],tspan_stability,perturbation);
-title('Roll Mode Dynamics')
-
-%  Dutch-Roll
-% x = [beta r]
-A_dr = [Y_b/trimSpeed -(1-Y_r/trimSpeed);
-        N_b_prime N_r_prime];
-disp('Dutch-Roll Mode Stability'); damp(A_dr)
-tspan_stability = 0:0.1:25;
-perturbation = [deg2rad(1);deg2rad(1)];
-figure;
-lsim(ss(A_dr,[],eye(2),0),[],tspan_stability,perturbation);
-title('Dutch-Roll Mode Dynamics')
-
+    QS = 0.5*params.env.rho*trimSpeed^2*params.geom.S;
+    Jx = params.body.J(1,1);
+    Jy = params.body.J(2,2);
+    Jz = params.body.J(3,3);
+    Jxz = params.body.J(1,3);
+    
+    % Longitudinal
+    X_u   = QS/params.body.m/trimSpeed*params.aero.CX_0*(2);
+    X_a   = QS/params.body.m*(params.aero.CX_a - params.aero.CZ_0*0);
+    X_q   = QS/params.body.m*params.aero.CX_q*params.geom.c/2/trimSpeed;
+    X_dt  = QS/params.body.m*params.aero.CX_dt;
+    X_de  = QS/params.body.m*params.aero.CX_de;
+    
+    Z_u   = QS/params.body.m/trimSpeed*params.aero.CZ_0*(2);
+    Z_a   = QS/params.body.m*(params.aero.CZ_a + params.aero.CX_0*0);
+    Z_q   = QS/params.body.m*params.aero.CZ_q*params.geom.c/2/trimSpeed;
+    Z_dt  = QS/params.body.m*params.aero.CZ_dt;
+    Z_de  = QS/params.body.m*params.aero.CZ_de;
+    
+    M_u   = QS*params.geom.c/Jy/trimSpeed*params.aero.Cm_0*(2);
+    M_a   = QS*params.geom.c/Jy*params.aero.Cm_a;
+    M_q   = QS*params.geom.c/Jy/trimSpeed*params.aero.Cm_q*params.geom.c;
+    M_dt  = QS/params.geom.c/Jy*params.aero.Cm_dt;
+    M_de  = QS*params.geom.c/Jy*params.aero.Cm_de;
+    
+    % x = [u; alpha; q; theta]
+    A_longitudinal_analytical = [X_u           X_a            0 -params.env.g;
+                                 Z_u/trimSpeed Z_a/trimSpeed  1  0;
+                                 M_u           M_a           M_q 0;
+                                  0             0             1  0];
+    B_longitudinal_analytical = [X_de            X_dt;
+                                 Z_de/trimSpeed  Z_dt/trimSpeed;
+                                 M_de            M_dt;
+                                 0                0];
+    disp('Longitudinal Stability'); damp(A_longitudinal_analytical)
+    tspan_stability = 0:0.1:250;
+    perturbation = [0.01*trimSpeed;0;deg2rad(1);deg2rad(0)];
+    figure;
+    lsim(ss(A_longitudinal_analytical,[],eye(4),0),[],tspan_stability,perturbation);
+    title('Longitudinal Dynamics')
+    
+    % Phugoid / Long-Period Mode
+    % x = [u; theta]
+    A_pg = [X_u -params.env.g; -Z_u/trimSpeed 0];
+    disp('Phugoid / Long-Period Mode Stability'); damp(A_pg)
+    tspan_stability = 0:0.1:250;
+    perturbation = [0.01*trimSpeed;deg2rad(0)];
+    figure;
+    lsim(ss(A_pg,[],eye(2),0),[],tspan_stability,perturbation);
+    title('Phugoid / Long-Period Mode Dynamics')
+    
+    % Short-Period Mode
+    % x = [alpha; q]
+    A_sp = [Z_a/trimSpeed 1; M_a M_q];
+    disp('Short-Period Mode Stability'); damp(A_sp)
+    tspan_stability = 0:0.1:25;
+    perturbation = [0;deg2rad(1)];
+    figure;
+    lsim(ss(A_sp,[],eye(2),0),[],tspan_stability,perturbation);
+    title('Short-Period Mode Dynamics')
+    
+    % Lateral Dynamics
+    Y_b  = QS/params.body.m*params.aero.CY_b;
+    Y_p  = QS/params.body.m/trimSpeed*params.aero.CY_p*(params.geom.b/2);
+    Y_r  = QS/params.body.m/trimSpeed*params.aero.CY_r*(params.geom.b/2);
+    Y_da = QS/params.body.m*params.aero.Cn_da;
+    Y_dr = QS/params.body.m*params.aero.Cn_dr;
+    
+    L_b  = QS*params.geom.b/Jx*params.aero.Cl_b;
+    L_p  = QS*params.geom.b/Jx/trimSpeed*params.aero.Cl_p*(params.geom.b/2);
+    L_r  = QS*params.geom.b/Jx/trimSpeed*params.aero.Cl_r*(params.geom.b/2);
+    L_da = QS*params.geom.b/Jx*params.aero.Cl_da;
+    L_dr = QS*params.geom.b/Jx*params.aero.Cl_dr;
+    
+    N_b  = QS*params.geom.b/Jz*params.aero.Cn_b;
+    N_p  = QS*params.geom.b/Jz/trimSpeed*params.aero.Cn_p*(params.geom.b/2);
+    N_r  = QS*params.geom.b/Jz/trimSpeed*params.aero.Cn_r*(params.geom.b/2);
+    N_da = QS*params.geom.b/Jx*params.aero.Cn_da;
+    N_dr = QS*params.geom.b/Jx*params.aero.Cn_dr;
+    
+    % roll-yaw coupling
+    Coupling      = 1 - Jxz^2/Jx/Jz;
+    L_b_coupling  = L_b/Coupling;
+    L_p_coupling  = L_p/Coupling;
+    L_r_coupling  = L_r/Coupling;
+    L_da_coupling = L_da/Coupling;
+    L_dr_coupling = L_dr/Coupling;
+    
+    N_b_coupling  = N_b/Coupling;
+    N_p_coupling  = N_p/Coupling;
+    N_r_coupling  = N_r/Coupling;
+    N_da_coupling = N_da/Coupling;
+    N_dr_coupling = N_dr/Coupling;
+    
+    L_b_prime  = L_b_coupling  + Jxz/Jx*N_b_coupling;
+    L_p_prime  = L_p_coupling  + Jxz/Jx*N_p_coupling;
+    L_r_prime  = L_r_coupling  + Jxz/Jx*N_r_coupling;
+    L_da_prime = L_da_coupling + Jxz/Jx*N_da_coupling;
+    L_dr_prime = L_dr_coupling + Jxz/Jx*N_dr_coupling;
+    
+    N_b_prime  = N_b_coupling  + Jxz/Jz*L_b_coupling;
+    N_p_prime  = N_p_coupling  + Jxz/Jz*L_p_coupling;
+    N_r_prime  = N_r_coupling  + Jxz/Jz*L_r_coupling;
+    N_da_prime = N_da_coupling + Jxz/Jz*L_da_coupling;
+    N_dr_prime = N_dr_coupling + Jxz/Jz*L_dr_coupling;
+    
+    % x = [beta; p; r; phi]
+    A_lateral_analytical = [Y_b/trimSpeed     Y_p/trimSpeed    -(1-Y_r/trimSpeed)  params.env.g/trimSpeed;
+                            L_b_prime         L_p_prime          L_r_prime         0;
+                            N_b_prime         N_p_prime          N_r_prime         0;
+                            0 1 0 0];
+    B_lateral_analytical = [Y_da/trimSpeed     Y_dr/trimSpeed;
+                            L_da_prime         L_dr_prime;
+                            N_da_prime         N_dr_prime;
+                                0                  0];
+    disp('Lateral Stability'); damp(A_lateral_analytical)
+    tspan_stability = 0:0.1:250;
+    perturbation = [deg2rad(1);deg2rad(1);deg2rad(1);deg2rad(0)];
+    figure;
+    lsim(ss(A_lateral_analytical,[],eye(4),0),[],tspan_stability,perturbation);
+    title('Lateral Dynamics')
+    
+    % Spiral
+    % x = [r]
+    A_spi = N_r_prime - L_r_prime*N_b_prime/L_b_prime;
+    disp('Spiral Stability'); damp(A_spi)
+    tspan_stability = 0:0.1:25;
+    perturbation = deg2rad(1);
+    figure;
+    lsim(ss(A_spi,[],eye(1),0),[],tspan_stability,perturbation);
+    title('Spiral Mode Dynamics')
+    
+    % Roll
+    % x = [p]
+    A_roll = L_p_prime;
+    disp('Roll Mode Stability'); damp(A_roll)
+    tspan_stability = 0:0.1:25;
+    perturbation = deg2rad(1);
+    figure;
+    lsim(ss(A_roll,[],eye(1),0),[],tspan_stability,perturbation);
+    title('Roll Mode Dynamics')
+    
+    %  Dutch-Roll
+    % x = [beta r]
+    A_dr = [Y_b/trimSpeed -(1-Y_r/trimSpeed);
+            N_b_prime N_r_prime];
+    disp('Dutch-Roll Mode Stability'); damp(A_dr)
+    tspan_stability = 0:0.1:25;
+    perturbation = [deg2rad(1);deg2rad(1)];
+    figure;
+    lsim(ss(A_dr,[],eye(2),0),[],tspan_stability,perturbation);
+    title('Dutch-Roll Mode Dynamics')
 end
 
 %% Simulation
@@ -661,13 +660,6 @@ function [x0, pilot] = initialState(name, AltitudeMSL, trimSpeed, params)
         case 'spiral'
             x0 = [0; 0; -AltitudeMSL; 44.54; 2.714; 5.836; 0; 0.1309; 0; 0; 0; 0];
             pilot = struct('aileron',0.1,'elevator',-0.1,'rudder',0,'throttle',0.5);
-
-        case 'trimCoupling'
-            x0 = [0; 0; -AltitudeMSL; ...
-                  36.911969266574350; 8.107208632644118; 8.825918825964060; ...
-                  0.128665353088755; 0.259337659945870; -0.178947917154394; 0; 0; 0];
-            pilot = struct('aileron',-0.104711430293605,'elevator',-0.069872522954441, ...
-                           'rudder',0,'throttle',0.5);
 
         otherwise
             error('mainAirplane:initialCondition','unknown initial condition "%s"', name);
