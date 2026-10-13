@@ -60,7 +60,9 @@ params.aero.CY_dr =  0.1158;
 % -------------------------------- Propulsion -------------------------------------
 params.prop.throttle = (1/6)*(3 + (-3:0.1:3)); % breakpoints, 0 to 1
 params.prop.thrust = 5000*(1 + tanh(-3:0.1:3)); % N, about 25 N at idle and 9975 N at full
-params.aero.CX_dt = mean(diff(params.prop.thrust)./diff(params.prop.throttle));
+slopes = diff(params.prop.thrust)./diff(params.prop.throttle);
+% params.aero.CX_dt = mean(slopes);
+params.aero.CX_dt = slopes(ceil(end/2));
 params.aero.CZ_dt = 0;
 params.aero.Cm_dt = 0;
 
@@ -154,8 +156,8 @@ tspan = 0:dt:Tf;
 N_states = 12; % the number of states
 
 % Initial condition (pick one). 'trimmed' solves for straight and level flight at the trimSpeed and altitude
-% initialCondition = 'doNothing';
-initialCondition = 'trimmed';
+initialCondition = 'doNothing';
+% initialCondition = 'trimmed';
 % initialCondition = 'spiral';
 
 trimSpeed = 55; % trimSpeed, m/s
@@ -164,13 +166,20 @@ AltitudeMSL = 2202; % operating height, m
 [x0, params.pilot] = initialState(initialCondition, AltitudeMSL, trimSpeed, params);
 
 if strcmp(initialCondition, 'trimmed')
+    % Linearized at the true trimmed condition
     [A_numerical, B_numerical] = linearizeDynamics(x0, params.pilot, params);
     
     % convert velocity from body to wind
-    A_numerical(5,:) = A_numerical(5,:) / trimSpeed;
-    B_numerical(5,:) = B_numerical(5,:) / trimSpeed;
-    A_numerical(6,:) = A_numerical(6,:) / trimSpeed;
-    B_numerical(6,:) = B_numerical(6,:) / trimSpeed;
+    T = eye(N_states); % transformation matrix
+    % d(beta) = dv/V
+    T(5,:) = 0; 
+    T(5,5) = 1/trimSpeed;
+    % d(alpha) = (u0*dw - w0*du)/V^2 ~=  1/V*dw - w0/V^2*du
+    T(6,:) = 0; 
+    T(6,4) = -x0(6)/trimSpeed^2; 
+    T(6,6) = 1/trimSpeed;
+    A_numerical = T*A_numerical*inv(T);
+    B_numerical = T*B_numerical;
 
     longitudinal_states  = [4 6 11 8]; % u w theta q
     longitudinal_control = [2 4]; % elevator and throttle
@@ -183,30 +192,31 @@ if strcmp(initialCondition, 'trimmed')
     B_lateral_numerical = B_numerical(lateral_states, lateral_control);
 
 % ------------------------------ Stability Derivatives ---------------------------
+    % Linearized at the trimSpeed, all other states are zero.
     QS = 0.5*params.env.rho*trimSpeed^2*params.geom.S;
     Jx = params.body.J(1,1);
     Jy = params.body.J(2,2);
     Jz = params.body.J(3,3);
-    Jxz = params.body.J(1,3);
+    Jxz = -params.body.J(1,3);
     
     % Longitudinal
-    X_u   = QS/params.body.m/trimSpeed*params.aero.CX_0*(2);
-    X_a   = QS/params.body.m*(params.aero.CX_a - params.aero.CZ_0*0);
-    X_q   = QS/params.body.m*params.aero.CX_q*params.geom.c/2/trimSpeed;
-    X_dt  = QS/params.body.m*params.aero.CX_dt;
-    X_de  = QS/params.body.m*params.aero.CX_de;
+    X_u  = 2*QS/params.body.m/trimSpeed*params.aero.CX_0;
+    X_a  = QS/params.body.m*params.aero.CX_a;
+    X_q  = QS/params.body.m*params.aero.CX_q*params.geom.c/2/trimSpeed;
+    X_de = QS/params.body.m*params.aero.CX_de;
+    X_dt = params.aero.CX_dt/params.body.m; % QS/params.body.m*params.aero.CX_dt;
     
-    Z_u   = QS/params.body.m/trimSpeed*params.aero.CZ_0*(2);
-    Z_a   = QS/params.body.m*(params.aero.CZ_a + params.aero.CX_0*0);
-    Z_q   = QS/params.body.m*params.aero.CZ_q*params.geom.c/2/trimSpeed;
-    Z_dt  = QS/params.body.m*params.aero.CZ_dt;
-    Z_de  = QS/params.body.m*params.aero.CZ_de;
+    Z_u  = 2*QS/params.body.m/trimSpeed*params.aero.CZ_0;
+    Z_a  = QS/params.body.m*params.aero.CZ_a;
+    Z_q  = QS/params.body.m*params.aero.CZ_q*params.geom.c/2/trimSpeed;
+    Z_de = QS/params.body.m*params.aero.CZ_de;
+    Z_dt = params.aero.CZ_dt/params.body.m;
     
-    M_u   = QS*params.geom.c/Jy/trimSpeed*params.aero.Cm_0*(2);
-    M_a   = QS*params.geom.c/Jy*params.aero.Cm_a;
-    M_q   = QS*params.geom.c/Jy/trimSpeed*params.aero.Cm_q*params.geom.c;
-    M_dt  = QS/params.geom.c/Jy*params.aero.Cm_dt;
-    M_de  = QS*params.geom.c/Jy*params.aero.Cm_de;
+    M_u  = 2*QS*params.geom.c/Jy/trimSpeed*params.aero.Cm_0;
+    M_a  = QS*params.geom.c/Jy*params.aero.Cm_a;
+    M_q  = QS*params.geom.c/Jy*params.aero.Cm_q*params.geom.c/2/trimSpeed;
+    M_de = QS*params.geom.c/Jy*params.aero.Cm_de;
+    M_dt = params.aero.Cm_dt/params.body.m*params.geom.c;
     
     % x = [u; alpha; q; theta]
     A_longitudinal_analytical = [X_u           X_a            0 -params.env.g;
@@ -248,8 +258,8 @@ if strcmp(initialCondition, 'trimmed')
     Y_b  = QS/params.body.m*params.aero.CY_b;
     Y_p  = QS/params.body.m/trimSpeed*params.aero.CY_p*(params.geom.b/2);
     Y_r  = QS/params.body.m/trimSpeed*params.aero.CY_r*(params.geom.b/2);
-    Y_da = QS/params.body.m*params.aero.Cn_da;
-    Y_dr = QS/params.body.m*params.aero.Cn_dr;
+    Y_da = QS/params.body.m*params.aero.CY_da;
+    Y_dr = QS/params.body.m*params.aero.CY_dr;
     
     L_b  = QS*params.geom.b/Jx*params.aero.Cl_b;
     L_p  = QS*params.geom.b/Jx/trimSpeed*params.aero.Cl_p*(params.geom.b/2);
@@ -260,8 +270,8 @@ if strcmp(initialCondition, 'trimmed')
     N_b  = QS*params.geom.b/Jz*params.aero.Cn_b;
     N_p  = QS*params.geom.b/Jz/trimSpeed*params.aero.Cn_p*(params.geom.b/2);
     N_r  = QS*params.geom.b/Jz/trimSpeed*params.aero.Cn_r*(params.geom.b/2);
-    N_da = QS*params.geom.b/Jx*params.aero.Cn_da;
-    N_dr = QS*params.geom.b/Jx*params.aero.Cn_dr;
+    N_da = QS*params.geom.b/Jz*params.aero.Cn_da;
+    N_dr = QS*params.geom.b/Jz*params.aero.Cn_dr;
     
     % roll-yaw coupling
     Coupling      = 1 - Jxz^2/Jx/Jz;
